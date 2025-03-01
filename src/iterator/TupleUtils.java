@@ -79,6 +79,17 @@ public class TupleUtils
 	  if(t1_s.compareTo( t2_s)>0)return 1;
 	  if (t1_s.compareTo( t2_s)<0)return -1;
 	  return 0;
+
+  case AttrType.attrVector100D:            // Compare two Vector100Dtype fields
+                try {
+                    Vector100Dtype v1 = t1.get100DVectFld(t1_fld_no);
+                    Vector100Dtype v2 = t2.get100DVectFld(t2_fld_no);
+                    int distance = v1.distanceTo(v2);
+                    if (distance == 0) return 0;
+                    return distance > 0 ? 1 : -1; // Return based on distance magnitude
+                } catch (FieldNumberOutOfBoundException e) {
+                    throw new TupleUtilsException(e, "FieldNumberOutOfBoundException is caught by TupleUtils.java");
+                }
 	default:
 	  
 	  throw new UnknowAttrType(null, "Don't know how to handle attrSymbol, attrNull");
@@ -198,6 +209,14 @@ public class TupleUtils
 	    throw new TupleUtilsException(e, "FieldNumberOutOfBoundException is caught by TupleUtils.java");
 	  }
 	  break;
+  case AttrType.attrVector100D:
+                try {
+                    Vector100Dtype vectData = tuple.get100DVectFld(fld_no);
+                    value.set100DVectFld(fld_no, vectData);
+                } catch (FieldNumberOutOfBoundException e) {
+                    throw new TupleUtilsException(e, "FieldNumberOutOfBoundException is caught by TupleUtils.java");
+                }
+                break;
 	default:
 	  throw new UnknowAttrType(null, "Don't know how to handle attrSymbol, attrNull");
 	  
