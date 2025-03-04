@@ -107,6 +107,8 @@ public class HFPage extends Page
     {
       data = apage.getpage();
     }
+
+  
   
   /**
    * Constructor of class HFPage

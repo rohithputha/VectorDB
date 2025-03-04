@@ -23,15 +23,17 @@ public class LSHIndexFileTest {
         System.out.println(page.getpage());
         System.out.println("MiniBase initialized with " + num_pages + " buffer pages");
 
-        LSHFIndexFile indexFile  = new LSHFIndexFile("lshindex",10,10);
+        LSHFIndexFile indexFile  = new LSHFIndexFile("lshindex",10,1);
         indexFile.close();
-        indexFile = new LSHFIndexFile("lshindex");
+        //indexFile = new LSHFIndexFile("lshindex");
 //        LSHFIndexFile indexFile = new LSHFIndexFile("lshindex");
         indexFile.insert(new Vector100Dtype(), new RID(new PageId(1),1));
-        SystemDefs.JavabaseDB.read_page(new PageId(2),page);
+        System.out.println("Vector inserted");
+        indexFile.close();
+        //SystemDefs.JavabaseDB.read_page(new PageId(2),page);
         SystemDefs.JavabaseDB.closeDB();
 
-        int a[] = new int[0];
+        //int a[] = new int[0];
 //        indexFile.insert(new Vector100Dtype(),new RID(new PageId(1),2));
     }
 }

@@ -5,13 +5,16 @@ import diskmgr.Page;
 import global.*;
 import heap.*;
 
+
 import java.io.IOException;
 
-public class LSHFLeafPage extends HFPage{
+public class LSHFLeafPage extends LSHFPage{
     private PageId pageId;
+    
 
     public LSHFLeafPage() throws ConstructPageException {
         super();
+        this.getPageType = 4; // Leaf page type
         try{
             Page newPage = new Page();
             PageId newPageId = SystemDefs.JavabaseBM.newPage(newPage, 1);
@@ -30,10 +33,12 @@ public class LSHFLeafPage extends HFPage{
     }
 
     public LSHFLeafPage(Page page){
-        super(page);
+        super();
+        this.getPageType = 4; // Leaf page type
     }
     public LSHFLeafPage(PageId pageId) throws ConstructPageException {
         super();
+        this.getPageType = 4; // Leaf page type
         super.curPage = pageId;
         this.pageId = pageId;
         try{
@@ -43,7 +48,7 @@ public class LSHFLeafPage extends HFPage{
         }
     }
 
-    private int getNumVectorInPage() throws IOException, InvalidSlotNumberException, FieldNumberOutOfBoundException, InvalidTupleSizeException, InvalidTypeException {
+    public int getNumVectorInPage() throws IOException, InvalidSlotNumberException, FieldNumberOutOfBoundException, InvalidTupleSizeException, InvalidTypeException {
        Tuple t = this.getRecord(new RID(this.getCurPage(), 0));
        t.setHdr((short)1, new AttrType[]{new AttrType(AttrType.attrInteger)}, null);
        return t.getIntFld(1);
@@ -69,7 +74,7 @@ public class LSHFLeafPage extends HFPage{
         else {
             Tuple t = new Tuple();
             t.setHdr((short)3, new AttrType[]{new AttrType(AttrType.attrVector100D),new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)}, null);
-            t.setVector100DFld(1,v);
+            t.set100DVectFld(1,v);
             t.setIntFld(2,rid.pageNo.pid);
             t.setIntFld(3,rid.slotNo);
             this.insertRecord(t.getTupleByteArray());

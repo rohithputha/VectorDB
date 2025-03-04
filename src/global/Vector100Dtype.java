@@ -39,4 +39,19 @@ public class Vector100Dtype{
         return vector.clone();
     }
 
+    public short get(int index){
+        try{
+            return vector[index];
+        }
+        catch(ArrayIndexOutOfBoundsException e){
+            System.err.println("ArrayIndexOutOfBoundsException at vector get");
+            throw e;
+        }
+        catch(NullPointerException e){
+            System.err.println("NullPointerException at vector get");
+            throw e;
+        }
+    }
+
+
 }

@@ -7,13 +7,15 @@ import heap.*;
 
 import java.io.IOException;
 
-public class LSHFInnerPage extends HFPage {
+public class LSHFInnerPage extends LSHFPage {
     private int layerId;
     private PageId pageId;
+    public static int getPageType = 5;
 
 
     public LSHFInnerPage(PageId pageId) throws ConstructPageException {
         super();
+        this.getPageType = 5; // Inner page type
         super.curPage = pageId;
         this.pageId = pageId;
         try{
@@ -30,6 +32,7 @@ public class LSHFInnerPage extends HFPage {
 
     public LSHFInnerPage(int layerId, int hashInConsideration)throws ConstructPageException {
         super();
+        this.getPageType = 5; // Inner page type
         try{
             Page newPage = new Page();
             PageId newPageId = SystemDefs.JavabaseBM.newPage(newPage, 1);

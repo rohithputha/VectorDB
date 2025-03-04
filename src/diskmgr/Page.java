@@ -53,5 +53,6 @@ public class Page implements GlobalConst{
    * 
    */
   protected byte [] data;
+  //public abstract int get_type();
   
 }

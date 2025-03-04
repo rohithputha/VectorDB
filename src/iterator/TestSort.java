@@ -62,7 +62,7 @@ public class TestSort {
             Vector100Dtype target = new Vector100Dtype(targetVals);
 
             // Sort with k=
-            Sort sort = new Sort(types, (short)1, null, fs, 1, new TupleOrder(TupleOrder.Ascending), 200, 2, target, 0);
+            Sort sort = new Sort(types, (short)1, null, fs, 1, new TupleOrder(TupleOrder.Ascending), 200, 2, target, 2);
             int count = 0;
             Tuple result;
             while ((result = sort.get_next()) != null && count < 3) {
