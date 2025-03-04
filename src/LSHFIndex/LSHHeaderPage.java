@@ -328,7 +328,7 @@ public class LSHHeaderPage extends HFPage {
          }
          LSHFInnerPage newInnerPage  = new LSHFInnerPage(layerId,0);
          layerPage.setLayerHeaderPage(startHeaderPageId, newInnerPage.getCurPage().pid, layerId,hashes);
-         LSHLayer layer = new LSHLayer(hashes,startHeaderPageId,layerId);
+         LSHLayer layer = new LSHLayer(hashes,newInnerPage.getCurPage().pid,layerId);
          LSHLayerMap.addLayer(layer);
 
          SystemDefs.JavabaseBM.unpinPage(newInnerPage.getCurPage(),true); // should it unpin here?
