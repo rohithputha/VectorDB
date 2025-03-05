@@ -10,6 +10,7 @@ import heap.InvalidSlotNumberException;
 import heap.InvalidTupleSizeException;
 import heap.InvalidTypeException;
 
+
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -38,30 +39,30 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
 
     // this means the index file is new and the header pages have to be created
     public LSHFIndexFile(String fileName, int h, int l) throws GetFileEntryException, InvalidPageNumberException, IOException, FileIOException, DiskMgrException, FileNameTooLongException, InvalidRunSizeException, DuplicateEntryException, OutOfSpaceException, ConstructPageException, HashEntryNotFoundException, BufferPoolExceededException, PageNotReadException, FieldNumberOutOfBoundException, HashOperationException, BufMgrException, PagePinnedException, InvalidFrameNumberException, PageUnpinnedException, ReplacerException, InvalidTupleSizeException, InvalidTypeException, PageNotFoundException {
-            PageId headerPageId = SystemDefs.JavabaseDB.get_file_entry(fileName);
-            if (headerPageId == null) {
-                LSHHeaderPage headerPage = LSHHeaderPage.LSHHeaderPageFactory.createHeaderPages(h, l);
-                if(headerPage == null) {
-                    throw new ConstructPageException(null, "LSH header page could not be constructed. Index file could not be created.");
-                }
-                headerPageId = headerPage.getCurPage();
-                SystemDefs.JavabaseDB.add_file_entry(fileName, headerPageId);
-
-                PageId t = SystemDefs.JavabaseDB.get_file_entry(fileName);
-                assert t != null;
-                this.headerPageId = headerPageId;
-                this.headerPage = headerPage;
-                this.h = h;
-                this.L = l;
-
-                LSHashFunctionsMap lshhash = LSHashFunctionsMap.getInstance();
-                LSHLayerMap lshLayerMap = LSHLayerMap.getInstance();
-//                System.out.println(lshhash);
+        PageId headerPageId = SystemDefs.JavabaseDB.get_file_entry(fileName);
+        if (headerPageId == null) {
+            LSHHeaderPage headerPage = LSHHeaderPage.LSHHeaderPageFactory.createHeaderPages(h, l);
+            if(headerPage == null) {
+                throw new ConstructPageException(null, "LSH header page could not be constructed. Index file could not be created.");
             }
-            else {
-                this.headerPage = new LSHHeaderPage(headerPageId);
-            }
-            this.fileName = fileName;
+            headerPageId = headerPage.getCurPage();
+            SystemDefs.JavabaseDB.add_file_entry(fileName, headerPageId);
+
+            PageId t = SystemDefs.JavabaseDB.get_file_entry(fileName);
+            assert t != null;
+            this.headerPageId = headerPageId;
+            this.headerPage = headerPage;
+            this.h = h;
+            this.L = l;
+
+            LSHashFunctionsMap lshhash = LSHashFunctionsMap.getInstance();
+            LSHLayerMap lshLayerMap = LSHLayerMap.getInstance();
+            System.out.println(lshhash);
+        }
+        else {
+            this.headerPage = new LSHHeaderPage(headerPageId);
+        }
+        this.fileName = fileName;
 
     }
 
@@ -75,9 +76,9 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
         this.headerPage = new LSHHeaderPage(headerPageId);// this should construct the layer and hash functions map...
         this.headerPage.getHashFunctions();
         this.h = this.headerPage.getHashFunctionsPerLayer();
-        LSHashFunctionsMap.getInstance();
+        LSHashFunctionsMap functionsMap = LSHashFunctionsMap.getInstance();
         this.headerPage.getLayers(h);
-        LSHLayerMap.getInstance();
+        LSHLayerMap layerMap = LSHLayerMap.getInstance();
 
         this.fileName = fileName;
     }
@@ -89,6 +90,7 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
         LSHFLeafPage leafPageFound = null;
         do{
             int hashInConsideration = currentPage.getHashFunctionInConsideration();
+
             int fPid  = currentPage.getBucketByKey(key);
             if (fPid == -1){
                 // the bucket is not found. create a new innerpage and insert the pid for this bucket and then go to that page.
@@ -116,7 +118,7 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
                 else{
                     prevPage = currentPage;
                     currentPage = new LSHFInnerPage(fPageId);
-                    SystemDefs.JavabaseBM.unpinPage(prevPage.getCurPage(), true);
+                    SystemDefs.JavabaseBM.unpinPage(prevPage.getCurPage(), false);
                 }
             }
         }while(leafPageFound == null);
@@ -127,6 +129,7 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
             return; // this can be removed if error throw
         }
         leafPageFound.insert(key, rid);
+        SystemDefs.JavabaseBM.unpinPage(leafPageFound.getCurPage(), false);
     }
 
     @Override
