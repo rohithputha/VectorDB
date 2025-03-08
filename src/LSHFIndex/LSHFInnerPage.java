@@ -7,15 +7,13 @@ import heap.*;
 
 import java.io.IOException;
 
-public class LSHFInnerPage extends LSHFPage {
+public class LSHFInnerPage extends LSHBasePage {
     private int layerId;
     private PageId pageId;
-    public static int getPageType = 5;
-
+    public static final int pageType = 5;
 
     public LSHFInnerPage(PageId pageId) throws ConstructPageException {
         super();
-        this.getPageType = 5; // Inner page type
         super.curPage = pageId;
         this.pageId = pageId;
         try{
@@ -32,7 +30,6 @@ public class LSHFInnerPage extends LSHFPage {
 
     public LSHFInnerPage(int layerId, int hashInConsideration)throws ConstructPageException {
         super();
-        this.getPageType = 5; // Inner page type
         try{
             Page newPage = new Page();
             PageId newPageId = SystemDefs.JavabaseBM.newPage(newPage, 1);
@@ -41,11 +38,18 @@ public class LSHFInnerPage extends LSHFPage {
             }
             this.init(newPageId, newPage);
             this.pageId = newPageId;
+
+            Tuple pageTuple = new Tuple();
+            pageTuple.setHdr((short)1, new AttrType[]{new AttrType(AttrType.attrInteger)}, null);
+            pageTuple.setIntFld(1, LSHFInnerPage.pageType);
+            this.insertRecord(pageTuple.getTupleByteArray());
+
             Tuple t = new Tuple();
             t.setHdr((short)2, new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)}, null);
             t.setIntFld(1, hashInConsideration);
             t.setIntFld(2, layerId);
-            RID rid = this.insertRecord(t.getTupleByteArray());
+            this.insertRecord(t.getTupleByteArray());
+
             this.layerId =  layerId;
         } catch (Exception e){
             throw new ConstructPageException(e, "init failed. failed to construct LSHHeaderPage");
@@ -59,12 +63,12 @@ public class LSHFInnerPage extends LSHFPage {
         return layerId;
     }
     public int getHashFunctionInConsideration() throws InvalidSlotNumberException, IOException, FieldNumberOutOfBoundException, InvalidTupleSizeException, InvalidTypeException {
-       Tuple t = this.getRecord(new RID(this.curPage,0));
-       t.setHdr((short)2,new AttrType[]{new AttrType(AttrType.attrInteger),new AttrType(AttrType.attrInteger)}, null);
-       return t.getIntFld(1);
+        Tuple t = this.getRecord(new RID(this.curPage,1));
+        t.setHdr((short)2,new AttrType[]{new AttrType(AttrType.attrInteger),new AttrType(AttrType.attrInteger)}, null);
+        return t.getIntFld(1);
     }
     private int getLayerInConsideration() throws InvalidSlotNumberException, IOException, FieldNumberOutOfBoundException, InvalidTupleSizeException, InvalidTypeException {
-        Tuple t = this.getRecord(new RID(this.curPage,0));
+        Tuple t = this.getRecord(new RID(this.curPage,1));
         t.setHdr((short)2,new AttrType[]{new AttrType(AttrType.attrInteger),new AttrType(AttrType.attrInteger)}, null);
         return t.getIntFld(2);
     }
@@ -73,7 +77,7 @@ public class LSHFInnerPage extends LSHFPage {
         int[] compoundHash = LSHLayerMap.getInstance().getLayerByLayerId(this.getLayerInConsideration()).getCompoundHash(v);
         int hashInConsideration = compoundHash[getHashFunctionInConsideration()];
 
-        for (short i = 1;i<this.getSlotCnt();i++){
+        for (short i = 3;i<this.getSlotCnt();i++){
             Tuple t = this.getRecord(new RID(this.curPage,i));
             t.setHdr((short)2,new AttrType[]{new AttrType(AttrType.attrInteger),new AttrType(AttrType.attrInteger)}, null);
             if (t.getIntFld(1) == hashInConsideration){
@@ -97,9 +101,11 @@ public class LSHFInnerPage extends LSHFPage {
         t.setIntFld(2, pid);
         return this.insertRecord(t.getTupleByteArray());
     }
+
+
 }
 /*
-    (hash function in consideration -> , layer id)
+   (pageType) (hash function in consideration -> , layer id) (rest of tuples)
  */
 
 /*

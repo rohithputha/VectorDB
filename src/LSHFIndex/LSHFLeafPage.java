@@ -1,20 +1,19 @@
+
 package LSHFIndex;
 
 import btree.ConstructPageException;
 import diskmgr.Page;
 import global.*;
 import heap.*;
-
+import org.w3c.dom.Attr;
 
 import java.io.IOException;
 
-public class LSHFLeafPage extends LSHFPage{
+public class LSHFLeafPage extends LSHBasePage{
     private PageId pageId;
-    
-
+    public static final int pageType = 4;
     public LSHFLeafPage() throws ConstructPageException {
         super();
-        this.getPageType = 4; // Leaf page type
         try{
             Page newPage = new Page();
             PageId newPageId = SystemDefs.JavabaseBM.newPage(newPage, 1);
@@ -25,20 +24,24 @@ public class LSHFLeafPage extends LSHFPage{
             this.pageId = newPageId;
             Tuple t = new Tuple();
             t.setHdr((short)1, new AttrType[]{new AttrType(AttrType.attrInteger)}, null);
-            t.setIntFld(1,0);
+            t.setIntFld(1,LSHFLeafPage.pageType);
+
+            Tuple t2 = new Tuple();
+            t2.setHdr((short)1, new AttrType[]{new AttrType(AttrType.attrInteger)}, null);
+            t2.setIntFld(1,0);
+
             this.insertRecord(t.getTupleByteArray());
+            this.insertRecord(t2.getTupleByteArray());
         } catch (Exception e){
             throw new ConstructPageException(e, "init failed. failed to construct LSHHeaderPage");
         }
     }
 
-    public LSHFLeafPage(Page page){
-        super();
-        this.getPageType = 4; // Leaf page type
-    }
+    //    public LSHFLeafPage(Page page){
+//        super(page);
+//    }
     public LSHFLeafPage(PageId pageId) throws ConstructPageException {
         super();
-        this.getPageType = 4; // Leaf page type
         super.curPage = pageId;
         this.pageId = pageId;
         try{
@@ -48,19 +51,24 @@ public class LSHFLeafPage extends LSHFPage{
         }
     }
 
-    public int getNumVectorInPage() throws IOException, InvalidSlotNumberException, FieldNumberOutOfBoundException, InvalidTupleSizeException, InvalidTypeException {
-       Tuple t = this.getRecord(new RID(this.getCurPage(), 0));
-       t.setHdr((short)1, new AttrType[]{new AttrType(AttrType.attrInteger)}, null);
-       return t.getIntFld(1);
+    private int getNumVectorInPage() throws IOException, InvalidSlotNumberException, FieldNumberOutOfBoundException, InvalidTupleSizeException, InvalidTypeException {
+        Tuple t = this.getRecord(new RID(this.getCurPage(), 1));
+        t.setHdr((short)2, new AttrType[]{new AttrType(AttrType.attrInteger),new AttrType(AttrType.attrInteger)}, null);
+        return t.getIntFld(2);
     }
     private void incrNumVectorInPage() throws IOException, InvalidSlotNumberException, FieldNumberOutOfBoundException, InvalidTupleSizeException, InvalidTypeException {
-        Tuple t = this.getRecord(new RID(this.getCurPage(), 0));
-        t.setHdr((short)1, new AttrType[]{new AttrType(AttrType.attrInteger)}, null);
+        Tuple t = this.getRecord(new RID(this.getCurPage(), 1));
+
+        t.setHdr((short)1, new AttrType[]{new AttrType(AttrType.attrInteger),new AttrType(AttrType.attrInteger)}, null);
         t.setIntFld(1,t.getIntFld(1)+1);
+        // need to write this in slot 0... // write a function in hfPage to the same....
+
     }
+
+
     public void insert(Vector100Dtype v, RID rid) throws FieldNumberOutOfBoundException, InvalidSlotNumberException, IOException, ConstructPageException, InvalidTupleSizeException, InvalidTypeException {
         // should there be a check if the key is already present on the leaf page?
-        if(this.getNumVectorInPage() == 18){ // 18 is the max number of vectors that can fit into a leaf page
+        if(this.available_space()<250){ // use this or increment num vectors and use that
             LSHFLeafPage l = null;
             if (this.getNextPage().pid != INVALID_PAGE){
                 l = new LSHFLeafPage(this.getNextPage());
@@ -81,12 +89,11 @@ public class LSHFLeafPage extends LSHFPage{
             this.incrNumVectorInPage();
         }
     }
-
 }
 
 /*
 max number of vectors to fit in a page = 18 considering page size is 4096B -> should this be hardcoded?
  */
 /*
-    (total number of vectors in the page), [(vector key, rid), (....), ....]
+    (pageType)(total number of vectors in the page), [(vector key, rid), (....), ....]
  */

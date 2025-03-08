@@ -8,6 +8,7 @@ import global.PageId;
 import global.RID;
 import global.SystemDefs;
 import heap.*;
+import org.w3c.dom.Attr;
 
 import java.io.IOException;
 import java.util.Random;
@@ -33,10 +34,10 @@ public class LSHHeaderPage extends HFPage {
       this.headerPageId  = pageId;
       super.curPage = pageId;
       try{
-           SystemDefs.JavabaseBM.pinPage(pageId, this, false);
-        } catch (Exception e) {
-           throw new ConstructPageException(e, "pin page failed. failed to construct LSHHeaderPage");
-        }
+         SystemDefs.JavabaseBM.pinPage(pageId, this, false);
+      } catch (Exception e) {
+         throw new ConstructPageException(e, "pin page failed. failed to construct LSHHeaderPage");
+      }
 
    }
 
@@ -66,17 +67,17 @@ public class LSHHeaderPage extends HFPage {
 //      setSlot(3, (int) AttrType.attrVector100D, 0);
    }
 
-//   public int getPageType() throws InvalidSlotNumberException, IOException, FieldNumberOutOfBoundException {
+   //   public int getPageType() throws InvalidSlotNumberException, IOException, FieldNumberOutOfBoundException {
 //      Tuple t = getRecord(new RID(this.headerPageId, 0));
 //
 //      return t.getIntFld(pgFld);
 //   }
    public int getBaseHeaderPageId() throws FieldNumberOutOfBoundException, IOException, InvalidSlotNumberException, InvalidTupleSizeException, InvalidTypeException {
-        Tuple t = getRecord(new RID(this.headerPageId,0));
+      Tuple t = getRecord(new RID(this.headerPageId,0));
       short[] shorts = new short[0];
       AttrType[] attrTypes = {new AttrType(AttrType.attrInteger),new AttrType(AttrType.attrInteger)};
       t.setHdr((short) 2,attrTypes, shorts);
-        return t.getIntFld(bFld);
+      return t.getIntFld(bFld);
    }
 
    public int getPageType() throws InvalidSlotNumberException, IOException, InvalidTupleSizeException, InvalidTypeException, FieldNumberOutOfBoundException {
@@ -328,7 +329,7 @@ public class LSHHeaderPage extends HFPage {
          }
          LSHFInnerPage newInnerPage  = new LSHFInnerPage(layerId,0);
          layerPage.setLayerHeaderPage(startHeaderPageId, newInnerPage.getCurPage().pid, layerId,hashes);
-         LSHLayer layer = new LSHLayer(hashes,newInnerPage.getCurPage().pid,layerId);
+         LSHLayer layer = new LSHLayer(hashes, newInnerPage.getCurPage().pid,layerId);
          LSHLayerMap.addLayer(layer);
 
          SystemDefs.JavabaseBM.unpinPage(newInnerPage.getCurPage(),true); // should it unpin here?
