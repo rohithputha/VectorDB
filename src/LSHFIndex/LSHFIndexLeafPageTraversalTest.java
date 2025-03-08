@@ -29,9 +29,9 @@ public class LSHFIndexLeafPageTraversalTest {
             // Create test vectors and RIDs
             Vector100Dtype key1 = createVector(1);
             Vector100Dtype key2 = createVector(2);
-            //Vector100Dtype key3 = createVector(3);
-            //Vector100Dtype key4 = createVector(4);
-            //Vector100Dtype key5 = createVector(5);
+//            Vector100Dtype key3 = createVector(3);
+//            Vector100Dtype key4 = createVector(4);
+//            Vector100Dtype key5 = createVector(5);
             System.out.println("Vectors Created successfully");
 
             index.insert(key1, new RID(new PageId(1), 1));
@@ -82,9 +82,9 @@ public class LSHFIndexLeafPageTraversalTest {
             
             
         
-            List<IntPair> leafPageIds = index.collectLeafPageIds(layerRootPage);
-            for(IntPair pair: leafPageIds){
-                System.out.println(pair.first + " " + pair.second);
+            List<LSHLeafDto> leafPageIds = index.collectLeafPageIds(layerRootPage);
+            for(LSHLeafDto pair: leafPageIds){
+                System.out.println(pair.getPid() + " " + pair.getSid());
             }
             SystemDefs.JavabaseDB.closeDB();
             System.out.println("Test completed.");

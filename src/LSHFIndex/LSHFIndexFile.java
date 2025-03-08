@@ -157,14 +157,14 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
         }
     }
 
-    public static List<IntPair> collectLeafPageIds(LSHFInnerPage currentPage) throws Exception {
-        List<IntPair> leafPageIds = new ArrayList<>();
+    public static List<LSHLeafDto> collectLeafPageIds(LSHFInnerPage currentPage) throws Exception {
+        List<LSHLeafDto> leafPageIds = new ArrayList<>();
         
         // Get the current hash function index
         //int hashFuncIndex = currentPage.getHashFunctionInConsideration();
         
         // If this is the last hash function, collect leaf page IDs
-        if (currentPage.getPageType() == 4) {
+        if (currentPage.getPageType() == LSHFLeafPage.pageType) {
             // Iterate through all slots in the current page
             for (short i = 2; i < currentPage.getSlotCnt(); i++) {
                 Tuple t = currentPage.getRecord(new RID(currentPage.getCurPage(), i));
@@ -173,7 +173,7 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
                 // Add the page ID (second field) to the list
                 int pgid = t.getIntFld(2);
                 int slotNum = t.getIntFld(3);
-                leafPageIds.add(new IntPair(pgid, slotNum));
+                leafPageIds.add(new LSHLeafDto(t.get100DVectFld(1),pgid, slotNum));
             }
             
             return leafPageIds;
@@ -194,8 +194,6 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
         }
         
         // If not the last hash function, recursively process buckets
-        
-        
         return leafPageIds;
     }
 

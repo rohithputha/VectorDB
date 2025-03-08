@@ -77,7 +77,7 @@ public class LSHFInnerPage extends LSHBasePage {
         int[] compoundHash = LSHLayerMap.getInstance().getLayerByLayerId(this.getLayerInConsideration()).getCompoundHash(v);
         int hashInConsideration = compoundHash[getHashFunctionInConsideration()];
 
-        for (short i = 3;i<this.getSlotCnt();i++){
+        for (short i = 2;i<this.getSlotCnt();i++){ // starts at 2 because the first 2 slots are taken for storing configs
             Tuple t = this.getRecord(new RID(this.curPage,i));
             t.setHdr((short)2,new AttrType[]{new AttrType(AttrType.attrInteger),new AttrType(AttrType.attrInteger)}, null);
             if (t.getIntFld(1) == hashInConsideration){
