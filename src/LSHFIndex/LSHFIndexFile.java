@@ -5,11 +5,7 @@ import btree.GetFileEntryException;
 import bufmgr.*;
 import diskmgr.*;
 import global.*;
-import heap.FieldNumberOutOfBoundException;
-import heap.InvalidSlotNumberException;
-import heap.InvalidTupleSizeException;
-import heap.InvalidTypeException;
-import heap.Tuple;
+import heap.*;
 
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
@@ -30,9 +26,9 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
 
 
     private static PageId getHeaderPageId(String fileName) throws GetFileEntryException {
-        try{
+        try {
             return SystemDefs.JavabaseDB.get_file_entry(fileName);
-        } catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             throw new GetFileEntryException(e.getMessage());
         }
@@ -44,7 +40,7 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
         PageId headerPageId = SystemDefs.JavabaseDB.get_file_entry(fileName);
         if (headerPageId == null) {
             LSHHeaderPage headerPage = LSHHeaderPage.LSHHeaderPageFactory.createHeaderPages(h, l);
-            if(headerPage == null) {
+            if (headerPage == null) {
                 throw new ConstructPageException(null, "LSH header page could not be constructed. Index file could not be created.");
             }
             headerPageId = headerPage.getCurPage();
@@ -60,8 +56,7 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
             LSHashFunctionsMap lshhash = LSHashFunctionsMap.getInstance();
             LSHLayerMap lshLayerMap = LSHLayerMap.getInstance();
             System.out.println(lshhash);
-        }
-        else {
+        } else {
             this.headerPage = new LSHHeaderPage(headerPageId);
         }
         this.fileName = fileName;
@@ -90,42 +85,39 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
         LSHFInnerPage currentPage = startPage;
         LSHFInnerPage prevPage = null;
         LSHFLeafPage leafPageFound = null;
-        do{
+        do {
             int hashInConsideration = currentPage.getHashFunctionInConsideration();
 
-            int fPid  = currentPage.getBucketByKey(key);
-            if (fPid == -1){
+            int fPid = currentPage.getBucketByKey(key);
+            if (fPid == -1) {
                 // the bucket is not found. create a new innerpage and insert the pid for this bucket and then go to that page.
                 // additional checks to be present if the it is last of hashes
-                if (hashInConsideration == this.h-1){
+                if (hashInConsideration == this.h - 1) {
                     // create a leaf page
                     leafPageFound = new LSHFLeafPage();
-                    currentPage.insertBucketByKey(key,leafPageFound.getCurPage().pid);
-                }
-                else {
+                    currentPage.insertBucketByKey(key, leafPageFound.getCurPage().pid);
+                } else {
                     //create an inner page
-                    LSHFInnerPage newPage = new LSHFInnerPage(startPage.getLayerId(),hashInConsideration + 1);
+                    LSHFInnerPage newPage = new LSHFInnerPage(startPage.getLayerId(), hashInConsideration + 1);
                     currentPage.insertBucketByKey(key, newPage.getCurPage().pid);
                     prevPage = currentPage;
                     currentPage = newPage;
                     SystemDefs.JavabaseBM.unpinPage(prevPage.getCurPage(), true);
                 }
 
-            }
-            else{
+            } else {
                 PageId fPageId = new PageId(fPid);
-                if(hashInConsideration == this.h-1){
+                if (hashInConsideration == this.h - 1) {
                     leafPageFound = new LSHFLeafPage(fPageId);
-                }
-                else{
+                } else {
                     prevPage = currentPage;
                     currentPage = new LSHFInnerPage(fPageId);
                     SystemDefs.JavabaseBM.unpinPage(prevPage.getCurPage(), false);
                 }
             }
-        }while(leafPageFound == null);
+        } while (leafPageFound == null);
 
-        if(leafPageFound == null){
+        if (leafPageFound == null) {
             // error
             // throw an error
             return; // this can be removed if error throw
@@ -137,10 +129,10 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
     @Override
     public void insert(Vector100Dtype key, RID rid) throws FieldNumberOutOfBoundException, ConstructPageException, InvalidSlotNumberException, IOException, InvalidTupleSizeException, InvalidTypeException, HashEntryNotFoundException, InvalidFrameNumberException, PageUnpinnedException, ReplacerException {
         LSHLayerMap layerMap = LSHLayerMap.getInstance();
-        Iterator<LSHLayer> iter =  layerMap.iterator();
-        while(iter.hasNext()){
+        Iterator<LSHLayer> iter = layerMap.iterator();
+        while (iter.hasNext()) {
             LSHLayer layer = iter.next();
-            this._insertOnEachLayer(layer.getLayerStartPage(),key, rid);
+            this._insertOnEachLayer(layer.getLayerStartPage(), key, rid);
         }
 
     }
@@ -157,45 +149,81 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
         }
     }
 
-    public static List<LSHLeafDto> collectLeafPageIds(LSHFInnerPage currentPage) throws Exception {
-        List<LSHLeafDto> leafPageIds = new ArrayList<>();
-        
+    public List<LSHDto> collectLeafPageIds(LSHBasePage currentPage) throws Exception {
+        List<LSHDto> leafPageIds = new ArrayList<>();
+
         // Get the current hash function index
         //int hashFuncIndex = currentPage.getHashFunctionInConsideration();
-        
+
         // If this is the last hash function, collect leaf page IDs
         if (currentPage.getPageType() == LSHFLeafPage.pageType) {
             // Iterate through all slots in the current page
-            for (short i = 2; i < currentPage.getSlotCnt(); i++) {
-                Tuple t = currentPage.getRecord(new RID(currentPage.getCurPage(), i));
-                t.setHdr((short)3, new AttrType[]{new AttrType(AttrType.attrVector100D),new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)}, null);
-                
-                // Add the page ID (second field) to the list
-                int pgid = t.getIntFld(2);
-                int slotNum = t.getIntFld(3);
-                leafPageIds.add(new LSHLeafDto(t.get100DVectFld(1),pgid, slotNum));
+            Iterator<LSHDto> lshLeafDtoIterator = (new LSHFLeafPage(currentPage)).iterator();
+            while (lshLeafDtoIterator.hasNext()) {
+                leafPageIds.add(lshLeafDtoIterator.next());
             }
-            
             return leafPageIds;
-        }else{
-            for (short i = 2; i < currentPage.getSlotCnt(); i++) {
-                Tuple t = currentPage.getRecord(new RID(currentPage.getCurPage(), i));
-                t.setHdr((short)2, 
-                    new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)}, 
-                    null);
-                
+        } else if (currentPage.getPageType() == LSHFInnerPage.pageType) {
+            LSHFInnerPage currentInnerPage = new LSHFInnerPage(currentPage);
+            for (short i = 2; i < currentInnerPage.getSlotCnt(); i++) {
+                Tuple t = currentInnerPage.getRecord(new RID(currentInnerPage.getCurPage(), i));
+                t.setHdr((short) 2,
+                        new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)},
+                        null);
+
                 // Get the page ID for the next level
                 int nextPageId = t.getIntFld(2);
-                
                 // Recursively process the next inner page
-                LSHFInnerPage nextPage = new LSHFInnerPage(new PageId(nextPageId));
+                LSHBasePage nextPage = new LSHBasePage(new PageId(nextPageId));
                 leafPageIds.addAll(collectLeafPageIds(nextPage));
             }
+            SystemDefs.JavabaseBM.unpinPage(currentInnerPage.getCurPage(), false);
         }
-        
+
         // If not the last hash function, recursively process buckets
         return leafPageIds;
     }
 
+    private List<LSHDto> _nearestNeighboursEachLayer(int currentPageId,Vector100Dtype v, int k, LSHLayer layer) throws ConstructPageException, FieldNumberOutOfBoundException, InvalidSlotNumberException, InvalidTupleSizeException, IOException, InvalidTypeException, HashEntryNotFoundException, InvalidFrameNumberException, PageUnpinnedException, ReplacerException {
+        LSHBasePage basePage = new LSHBasePage(new PageId(currentPageId));
+        List<LSHDto> a = new ArrayList<>();
+        if(basePage.getPageType() == LSHFInnerPage.pageType){
+            LSHFInnerPage innerPage = new LSHFInnerPage(basePage);
+            int pageId = innerPage.getBucketByKey(v);
+            a = _nearestNeighboursEachLayer(pageId,v,k,layer);
+            if (a.size() < k) {
+                Iterator<List<LSHDto>> iterator = innerPage.expansionIterator(pageId);
+                while (iterator.hasNext() && a.size() < k) {
+                    List<LSHDto> next = iterator.next();
+                    for (LSHDto d : next) {
+                        a.addAll(_nearestNeighboursEachLayer(d.getPid(), v, k - a.size(), layer));
+                    }
+                }
+            }
+            SystemDefs.JavabaseBM.unpinPage(innerPage.getCurPage(), false);
+        }
+        else if (basePage.getPageType() == LSHFLeafPage.pageType){
+            LSHFLeafPage leafPage = new LSHFLeafPage(basePage);
+            Iterator<LSHDto> iterator = leafPage.iterator();
+            while(iterator.hasNext()){
+                a.add(iterator.next());
+            }
+            SystemDefs.JavabaseBM.unpinPage(leafPage.getCurPage(), false);
+        }
+        return a;
+    }
+
+    public List<LSHDto> nearestNeighbourScan(Vector100Dtype v, int k) throws Exception {
+        LSHLayerMap layerMap = LSHLayerMap.getInstance();
+        Iterator<LSHLayer> iter = layerMap.iterator();
+        List<LSHDto> a = new ArrayList<>();
+
+        while (iter.hasNext()) {
+            LSHLayer layer = iter.next();
+            a.addAll(this._nearestNeighboursEachLayer(layer.getLayerStartPage(), v, k, layer));
+        }
+        // right now returns more than k, need a top k choosing logic
+        return a;
+    }
 
 }

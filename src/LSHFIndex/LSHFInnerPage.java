@@ -6,8 +6,11 @@ import global.*;
 import heap.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-public class LSHFInnerPage extends LSHBasePage {
+public class LSHFInnerPage extends LSHBasePage implements Iterable<LSHDto> {
     private int layerId;
     private PageId pageId;
     public static final int pageType = 5;
@@ -26,6 +29,19 @@ public class LSHFInnerPage extends LSHBasePage {
 
     public LSHFInnerPage(int layerId)throws ConstructPageException {
         new LSHFInnerPage(layerId,0);
+    }
+
+    public LSHFInnerPage(LSHBasePage basePage) throws ConstructPageException, IOException {
+        super();
+        this.curPage = basePage.getCurPage();
+        this.pageId = basePage.getCurPage();
+        try{
+            SystemDefs.JavabaseBM.pinPage(pageId, this, false);
+            SystemDefs.JavabaseBM.unpinPage(pageId, false);
+        } catch (Exception e) {
+            throw new ConstructPageException(e, "pin page failed. failed to construct LSHInnerPage");
+        }
+
     }
 
     public LSHFInnerPage(int layerId, int hashInConsideration)throws ConstructPageException {
@@ -77,7 +93,7 @@ public class LSHFInnerPage extends LSHBasePage {
         int[] compoundHash = LSHLayerMap.getInstance().getLayerByLayerId(this.getLayerInConsideration()).getCompoundHash(v);
         int hashInConsideration = compoundHash[getHashFunctionInConsideration()];
 
-        for (short i = 2;i<this.getSlotCnt();i++){ // starts at 2 because the first 2 slots are taken for storing configs
+        for (short i = 2;i<this.getSlotCnt();i++){
             Tuple t = this.getRecord(new RID(this.curPage,i));
             t.setHdr((short)2,new AttrType[]{new AttrType(AttrType.attrInteger),new AttrType(AttrType.attrInteger)}, null);
             if (t.getIntFld(1) == hashInConsideration){
@@ -86,6 +102,8 @@ public class LSHFInnerPage extends LSHBasePage {
         }
         return -1;
     }
+
+
 
     public RID insertBucketByKey(Vector100Dtype v, int pid) throws FieldNumberOutOfBoundException, InvalidSlotNumberException, IOException, InvalidTupleSizeException, InvalidTypeException {
         int bucket = getBucketByKey(v);
@@ -102,7 +120,88 @@ public class LSHFInnerPage extends LSHBasePage {
         return this.insertRecord(t.getTupleByteArray());
     }
 
+    @Override
+    public Iterator<LSHDto> iterator() {
+        return null;
+    }
+    public Iterator<List<LSHDto>> expansionIterator(int startPage) throws IOException, InvalidTupleSizeException, InvalidTypeException, InvalidSlotNumberException, FieldNumberOutOfBoundException {
 
+        for (short i = 2;i<this.getSlotCnt();i++){
+            Tuple t = this.getRecord(new RID(this.curPage,i));
+            t.setHdr((short)2,new AttrType[]{new AttrType(AttrType.attrInteger),new AttrType(AttrType.attrInteger)}, null);
+            if (t.getIntFld(2) == startPage){
+                return new LshInnerPageExpansionIterator(i, this);
+            }
+        }
+        return null;
+    }
+
+    private class LshInnerPageExpansionIterator implements Iterator<List<LSHDto>>{
+
+        private int l;
+        private int r;
+        private final int startIndex;
+        private final int lm;
+        private final int rm;
+        private final LSHFInnerPage innerPage;
+
+        private LshInnerPageExpansionIterator(int stIndex, LSHFInnerPage innerPage) throws IOException {
+            startIndex = stIndex;
+            l = stIndex-1;
+            r = stIndex+1;
+            lm = 2;
+            rm = innerPage.getSlotCnt()-1;
+            this.innerPage = innerPage;
+        }
+        @Override
+        public boolean hasNext() {
+            if(l<lm && r>rm){
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public List<LSHDto> next() {
+            List<LSHDto> lshDtos = new ArrayList<LSHDto>();
+            if (l>=lm){
+                try {
+                    Tuple t= innerPage.getRecord(new RID(innerPage.curPage,l));
+                    t.setHdr((short)2,new AttrType[]{new AttrType(AttrType.attrInteger),new AttrType(AttrType.attrInteger)}, null);
+                    lshDtos.add(new LSHDto(t.getIntFld(1),t.getIntFld(2)));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                } catch (InvalidSlotNumberException e) {
+                    throw new RuntimeException(e);
+                } catch (InvalidTupleSizeException e) {
+                    throw new RuntimeException(e);
+                } catch (FieldNumberOutOfBoundException e) {
+                    throw new RuntimeException(e);
+                } catch (InvalidTypeException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            if (r<=rm){
+                try {
+                    Tuple t= innerPage.getRecord(new RID(innerPage.curPage,r));
+                    t.setHdr((short)2,new AttrType[]{new AttrType(AttrType.attrInteger),new AttrType(AttrType.attrInteger)}, null);
+                    lshDtos.add(new LSHDto(t.getIntFld(1),t.getIntFld(2)));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                } catch (InvalidSlotNumberException e) {
+                    throw new RuntimeException(e);
+                } catch (InvalidTupleSizeException e) {
+                    throw new RuntimeException(e);
+                } catch (FieldNumberOutOfBoundException e) {
+                    throw new RuntimeException(e);
+                } catch (InvalidTypeException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            return lshDtos;
+        }
+    }
 }
 /*
    (pageType) (hash function in consideration -> , layer id) (rest of tuples)

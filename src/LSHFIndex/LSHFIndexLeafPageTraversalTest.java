@@ -2,15 +2,8 @@ package LSHFIndex;
 
 import global.*;
 import heap.*;
-import diskmgr.*;
-import bufmgr.*;
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
 
-import LSHFIndex.LSHFInnerPage;
-import LSHFIndex.LSHFLeafPage;
-import LSHFIndex.LSHFPage;
+import java.util.List;
 
 
 public class LSHFIndexLeafPageTraversalTest {
@@ -45,7 +38,7 @@ public class LSHFIndexLeafPageTraversalTest {
 
             // Step 3: Inspect layer 0's start page structure
 
-            
+
 
             LSHLayerMap layerMap = LSHLayerMap.getInstance();
             LSHLayer layer = layerMap.getLayerByLayerId(0); // Directly access layer 0
@@ -56,16 +49,17 @@ public class LSHFIndexLeafPageTraversalTest {
             System.out.println("Selected layer 0 with start page ID: " + startPageId);
 
             PageId pid = new PageId(startPageId);
-            LSHFInnerPage layerRootPage = new LSHFInnerPage(pid);
+//            LSHFInnerPage layerRootPage = new LSHFInnerPage(pid);
+            LSHBasePage layerRootBasePage = new LSHBasePage(pid);
             // List<Integer> leaf_Page_Ids = new ArrayList<>();
             // System.out.println("Tye of the page is: " + layerRootPage.getPageType());
             // int NextPageId = -1;
             // for(short i=2; i<layerRootPage.getSlotCnt(); i++){
             //     Tuple u = layerRootPage.getRecord(new RID(layerRootPage.getCurPage(), i));
-            //         u.setHdr((short)2, 
-            //             new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)}, 
+            //         u.setHdr((short)2,
+            //             new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)},
             //             null);
-                    
+
             //         NextPageId = u.getIntFld(2);
             //         leaf_Page_Ids.add(NextPageId);
             //         //System.out.println(NextPageId);
@@ -79,11 +73,11 @@ public class LSHFIndexLeafPageTraversalTest {
             //pid = new PageId(37);
             //analyzepage(pid);//Leaf page!
             //System.out.println(hashFuncIndex);
-            
-            
-        
-            List<LSHLeafDto> leafPageIds = index.collectLeafPageIds(layerRootPage);
-            for(LSHLeafDto pair: leafPageIds){
+
+
+
+            List<LSHDto> leafPageIds = index.collectLeafPageIds(layerRootBasePage);
+            for(LSHDto pair: leafPageIds){
                 System.out.println(pair.getPid() + " " + pair.getSid());
             }
             SystemDefs.JavabaseDB.closeDB();
@@ -122,10 +116,10 @@ public class LSHFIndexLeafPageTraversalTest {
                 int firstBucketPageId = -1;
                 for (short i = 2; i < page.getSlotCnt(); i++) {
                     Tuple u = page.getRecord(new RID(page.getCurPage(), i));
-                    u.setHdr((short)2, 
-                        new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)}, 
-                        null);
-                    
+                    u.setHdr((short)2,
+                            new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)},
+                            null);
+
                     firstBucketPageId = u.getIntFld(2);
                     break;
                 }
@@ -142,7 +136,7 @@ public class LSHFIndexLeafPageTraversalTest {
                 int data_id = v.getIntFld(2);
                 System.out.println("Record is points to this page no: " + data_id);
 
-            
+
 
             }
         } catch (Exception e1) {
@@ -151,10 +145,10 @@ public class LSHFIndexLeafPageTraversalTest {
         // int firstBucketPageId = -1;
         // for (short i = 2; i < page.getSlotCnt(); i++) {
         //     Tuple u = page.getRecord(new RID(page.getCurPage(), i));
-        //     u.setHdr((short)2, 
-        //         new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)}, 
+        //     u.setHdr((short)2,
+        //         new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)},
         //         null);
-            
+
         //     firstBucketPageId = u.getIntFld(2);
         //     break;
         // }
@@ -163,7 +157,7 @@ public class LSHFIndexLeafPageTraversalTest {
         //return nextpid;
     }
 
-    
 
-    
+
+
 }
