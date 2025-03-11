@@ -97,7 +97,7 @@ public class LSHFLeafPage extends LSHBasePage implements Iterable<LSHDto> {
         else {
             Tuple t = new Tuple();
             t.setHdr((short)3, new AttrType[]{new AttrType(AttrType.attrVector100D),new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)}, null);
-            t.setVector100DFld(1,v);
+            t.set100DVectFld(1,v);
             t.setIntFld(2,rid.pageNo.pid);
             t.setIntFld(3,rid.slotNo);
             this.insertRecord(t.getTupleByteArray());
