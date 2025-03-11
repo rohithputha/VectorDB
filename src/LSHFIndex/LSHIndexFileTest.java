@@ -11,6 +11,7 @@ import heap.InvalidTupleSizeException;
 import heap.InvalidTypeException;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public class LSHIndexFileTest {
     public static void main(String[] args) throws HashEntryNotFoundException, BufferPoolExceededException, PageNotReadException, ConstructPageException, HashOperationException, BufMgrException, InvalidRunSizeException, GetFileEntryException, PagePinnedException, InvalidFrameNumberException, IOException, OutOfSpaceException, FieldNumberOutOfBoundException, FileNameTooLongException, InvalidPageNumberException, FileIOException, DuplicateEntryException, PageUnpinnedException, DiskMgrException, ReplacerException, InvalidSlotNumberException, InvalidTupleSizeException, InvalidTypeException, PageNotFoundException {
@@ -23,17 +24,16 @@ public class LSHIndexFileTest {
         System.out.println(page.getpage());
         System.out.println("MiniBase initialized with " + num_pages + " buffer pages");
 
-        LSHFIndexFile indexFile  = new LSHFIndexFile("lshindex",10,1);
+        LSHFIndexFile indexFile  = new LSHFIndexFile("lshindex",1,1);
         indexFile.close();
-        //indexFile = new LSHFIndexFile("lshindex");
+        indexFile = new LSHFIndexFile("lshindex");
 //        LSHFIndexFile indexFile = new LSHFIndexFile("lshindex");
-        indexFile.insert(new Vector100Dtype(), new RID(new PageId(1),1));
-        System.out.println("Vector inserted");
-        indexFile.close();
-        //SystemDefs.JavabaseDB.read_page(new PageId(2),page);
+        indexFile.insert(new Vector100Dtype(), new RID(new PageId(10),20));
+        indexFile.insert(new Vector100Dtype(), new RID(new PageId(20),30));
+        SystemDefs.JavabaseDB.read_page(new PageId(2),page);
         SystemDefs.JavabaseDB.closeDB();
 
-        //int a[] = new int[0];
+        int a[] = new int[0];
 //        indexFile.insert(new Vector100Dtype(),new RID(new PageId(1),2));
     }
 }

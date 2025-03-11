@@ -6,9 +6,7 @@ import global.*;
 import heap.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class LSHFInnerPage extends LSHBasePage implements Iterable<LSHDto> {
     private int layerId;
@@ -90,7 +88,7 @@ public class LSHFInnerPage extends LSHBasePage implements Iterable<LSHDto> {
     }
 
     public int getBucketByKey(Vector100Dtype v) throws FieldNumberOutOfBoundException, InvalidSlotNumberException, IOException, InvalidTupleSizeException, InvalidTypeException {
-        int[] compoundHash = LSHLayerMap.getInstance().getLayerByLayerId(this.getLayerInConsideration()).getCompoundHash(v);
+        int[] compoundHash = LSHLayerMap.getInstance().getLayerByLayerId(this.getLayerInConsideration()).getCompoundHash(v, LSHashFunctionsMap.getInstance());
         int hashInConsideration = compoundHash[getHashFunctionInConsideration()];
 
         for (short i = 2;i<this.getSlotCnt();i++){
@@ -113,7 +111,7 @@ public class LSHFInnerPage extends LSHBasePage implements Iterable<LSHDto> {
 
         Tuple t = new Tuple();
         t.setHdr((short)2,new AttrType[]{new AttrType(AttrType.attrInteger),new AttrType(AttrType.attrInteger)}, null);
-        int[] compoundHash = LSHLayerMap.getInstance().getLayerByLayerId(this.getLayerInConsideration()).getCompoundHash(v);
+        int[] compoundHash = LSHLayerMap.getInstance().getLayerByLayerId(this.getLayerInConsideration()).getCompoundHash(v, LSHashFunctionsMap.getInstance());
         int hashInConsideration = compoundHash[getHashFunctionInConsideration()];
         t.setIntFld(1, hashInConsideration);
         t.setIntFld(2, pid);
@@ -121,9 +119,15 @@ public class LSHFInnerPage extends LSHBasePage implements Iterable<LSHDto> {
     }
 
     @Override
-    public Iterator<LSHDto> iterator() {
-        return null;
+    public LSHInnerPageIterator iterator() {
+        try {
+            return new LSHInnerPageIterator(this);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
+
+
     public Iterator<List<LSHDto>> expansionIterator(int startPage) throws IOException, InvalidTupleSizeException, InvalidTypeException, InvalidSlotNumberException, FieldNumberOutOfBoundException {
 
         for (short i = 2;i<this.getSlotCnt();i++){
@@ -134,6 +138,57 @@ public class LSHFInnerPage extends LSHBasePage implements Iterable<LSHDto> {
             }
         }
         return null;
+    }
+
+    public class LSHInnerPageIterator implements Iterator<LSHDto> {
+
+        private final int lm;
+        private final int rm;
+        private int i;
+        private LSHFInnerPage innerPage;
+        private Set<Integer> exceptions;
+        private LSHInnerPageIterator(LSHFInnerPage innerPage) throws IOException {
+            this.lm = 2;
+            this.rm = innerPage.getSlotCnt() - 1;
+            this.i = lm;
+            this.innerPage = innerPage;
+            this.exceptions = new HashSet<Integer>();
+        }
+        @Override
+        public boolean hasNext() {
+            return this.i <= this.rm;
+        }
+
+        @Override
+        public LSHDto next() {
+            Tuple t= null;
+            try {
+                t = innerPage.getRecord(new RID(innerPage.getCurPage(),i));
+                this.i++;
+                t.setHdr((short)2,new AttrType[]{new AttrType(AttrType.attrInteger),new AttrType(AttrType.attrInteger)}, null);
+                if (exceptions.contains(t.getIntFld(2))){
+                    if(hasNext()){
+                        return next();
+                    }
+                    else return new LSHDto(-1, -1);
+                }
+                return new LSHDto(t.getIntFld(1),t.getIntFld(2));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (InvalidSlotNumberException e) {
+                throw new RuntimeException(e);
+            } catch (InvalidTupleSizeException e) {
+                throw new RuntimeException(e);
+            } catch (InvalidTypeException e) {
+                throw new RuntimeException(e);
+            } catch (FieldNumberOutOfBoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public void setExceptions(int pid){
+            exceptions.add(pid);
+        }
     }
 
     private class LshInnerPageExpansionIterator implements Iterator<List<LSHDto>>{
@@ -203,6 +258,7 @@ public class LSHFInnerPage extends LSHBasePage implements Iterable<LSHDto> {
         }
     }
 }
+
 /*
    (pageType) (hash function in consideration -> , layer id) (rest of tuples)
  */

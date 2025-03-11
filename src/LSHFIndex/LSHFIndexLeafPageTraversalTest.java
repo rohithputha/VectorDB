@@ -2,6 +2,7 @@ package LSHFIndex;
 
 import global.*;
 import heap.*;
+import iterator.Sort;
 
 import java.util.List;
 
@@ -83,7 +84,13 @@ public class LSHFIndexLeafPageTraversalTest {
             SystemDefs.JavabaseDB.closeDB();
             System.out.println("Test completed.");
 
-
+            Sort sort = index.nearestNeighbourScan(createVector(1), 2);
+            Tuple result;
+            int count = 0;
+            while ((result = sort.get_next()) != null && count < 300) {
+                System.out.println("Result " + (count + 1) + ": First: " + result.get100DVectFld(1).get(1) + ", Last: " + result.get100DVectFld(1).get(99));
+                count++;
+            }
 
         } catch (Exception e) {
             e.printStackTrace();

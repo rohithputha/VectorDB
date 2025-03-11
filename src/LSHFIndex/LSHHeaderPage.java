@@ -366,9 +366,14 @@ public class LSHHeaderPage extends HFPage {
 
 }
 
+
 /*
    base header page -> hash function page 1 -> hash function page n = th-> layer page 1 -> layer page m
-   (ax + b)%w =>
+   (a.x + b)%w =>
+   L -> (h1, h2, h3, h4)
+   L2 -> (h3, h7, h9, h8)
+
+   base header page -> hashfunction pages -> hash page -.... -> layer page -> layer page 2..-> ....
  */
 
 /*
@@ -378,7 +383,7 @@ public class LSHHeaderPage extends HFPage {
 
 /*
    HashFunction Page tuple
-   (pg page type, baseHeaderPage Id b))( b value of hash function) (100 float values tuple)
+   (pg page type, baseHeaderPage Id b)) ( b value of hash function) (100 int values tuple)
  */
 
 /*
@@ -397,7 +402,10 @@ public class LSHHeaderPage extends HFPage {
    [hash function values
    b value of the hash function] * th times
    [layer layout -> list of hash funciton ids that would be used for the layer, start page of each layer] * L times
+
+   th = h * 2 ->
  */
+
 
 // slot numbers start from 0
 // fld numbers start from 1

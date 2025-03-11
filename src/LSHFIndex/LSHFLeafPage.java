@@ -82,7 +82,7 @@ public class LSHFLeafPage extends LSHBasePage implements Iterable<LSHDto> {
 
 
     public void insert(Vector100Dtype v, RID rid) throws FieldNumberOutOfBoundException, InvalidSlotNumberException, IOException, ConstructPageException, InvalidTupleSizeException, InvalidTypeException {
-        // should there be a check if the key is already present on the leaf page?
+        // fix this: we are not going to the end of the list of overflow pages, we are just checking the base leaf page available space which is a mistake.,
         if(this.available_space()<250){ // use this or increment num vectors and use that
             LSHFLeafPage l = null;
             if (this.getNextPage().pid != INVALID_PAGE){
@@ -97,7 +97,7 @@ public class LSHFLeafPage extends LSHBasePage implements Iterable<LSHDto> {
         else {
             Tuple t = new Tuple();
             t.setHdr((short)3, new AttrType[]{new AttrType(AttrType.attrVector100D),new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)}, null);
-            t.setVector100DFld(1,v);
+            t.set100DVectFld(1,v);
             t.setIntFld(2,rid.pageNo.pid);
             t.setIntFld(3,rid.slotNo);
             this.insertRecord(t.getTupleByteArray());
@@ -161,7 +161,7 @@ public class LSHFLeafPage extends LSHBasePage implements Iterable<LSHDto> {
                     int slotNum = t.getIntFld(3);
                     Vector100Dtype v = t.get100DVectFld(1);
                     this.index+=1;
-                    return new LSHDto(t.get100DVectFld(1),pgid, slotNum);
+                    return new LSHDto(v,pgid, slotNum);
                 }
                 else if (leafPage.getNextPage().pid != INVALID_PAGE){
                     LSHFLeafPage nl = new LSHFLeafPage(this.leafPage.getCurPage());
@@ -202,8 +202,10 @@ public class LSHFLeafPage extends LSHBasePage implements Iterable<LSHDto> {
 }
 
 /*
+tuple of vector, (page id, slot id) -> 218bytes -> 200 + 4 + 4 + 2*3 + (4)
 max number of vectors to fit in a page = 18 considering page size is 4096B -> should this be hardcoded?
  */
 /*
+ (leaf page1 > 18v -> overflow leaf page1 -> overflow page 2) -> 1 bucket
     (pageType)(total number of vectors in the page), [(vector key, rid), (....), ....]
  */

@@ -51,7 +51,7 @@ public class LSHLayerMap implements Iterable<LSHLayer> {
         return new LSHLayerIterator(this.lshLayerMap);
     }
 
-     class LSHLayerIterator implements Iterator<LSHLayer> {
+    class LSHLayerIterator implements Iterator<LSHLayer> {
 
         int index = 0;
         List<LSHLayer> layerList;

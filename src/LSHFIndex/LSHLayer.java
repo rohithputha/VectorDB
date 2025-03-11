@@ -1,5 +1,6 @@
 package LSHFIndex;
 
+import global.PageId;
 import global.Vector100Dtype;
 
 import java.util.Arrays;
@@ -22,10 +23,10 @@ public class LSHLayer {
     public int getLayerStartPage(){
         return layerStartPage;
     }
-    public int[] getCompoundHash(Vector100Dtype v) {
+    public int[] getCompoundHash(Vector100Dtype v, LSHashFunctionsMap lsHashFunctionsMap) {
         int[] compoundHash = new int[hashFunctions.length];
         for (int i = 0; i < hashFunctions.length; i++) {
-//            compoundHash[i] = hashFunctions[i].getHashValue(v);
+            compoundHash[i] = lsHashFunctionsMap.getHashFunction(hashFunctions[i]).getHashValue(v);
         }
         return compoundHash;
     }

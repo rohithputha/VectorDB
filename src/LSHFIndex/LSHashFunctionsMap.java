@@ -34,7 +34,7 @@ public class LSHashFunctionsMap {
     }
 
 
-   public static void addHashFunction(LSHashFunction hashFunction) {
+    public static void addHashFunction(LSHashFunction hashFunction) {
         if (instance != null) {
             return;
         }
@@ -42,14 +42,14 @@ public class LSHashFunctionsMap {
             listOfHashFunctions = new ArrayList<>();
         }
         listOfHashFunctions.add(hashFunction);
-   }
+    }
 
     public static LSHashFunctionsMap getInstance() {
 
         if (instance != null) {
             return instance;
         }
-        LSHashFunctionsMap instance = new LSHashFunctionsMap();
+        instance = new LSHashFunctionsMap();
         for (LSHashFunction hashFunction : listOfHashFunctions) {
             instance.addHashFunctionToMap(hashFunction);
         }

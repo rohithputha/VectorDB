@@ -1,7 +1,14 @@
 package LSHFIndex;
 
 
+import global.AttrType;
 import global.Vector100Dtype;
+import heap.FieldNumberOutOfBoundException;
+import heap.InvalidTupleSizeException;
+import heap.InvalidTypeException;
+import heap.Tuple;
+
+import java.io.IOException;
 
 public class LSHDto {
     private Vector100Dtype v;
@@ -26,5 +33,13 @@ public class LSHDto {
     }
     public int getSid() {
         return sid;
+    }
+    public Tuple toLeafTuple() throws InvalidTupleSizeException, IOException, InvalidTypeException, FieldNumberOutOfBoundException {
+        Tuple tuple = new Tuple();
+        tuple.setHdr((short)3, new AttrType[]{new AttrType(AttrType.attrVector100D), new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)}, null);
+        tuple.set100DVectFld(1,this.v);
+        tuple.setIntFld(2, pid);
+        tuple.setIntFld(3, sid);
+        return tuple;
     }
 }

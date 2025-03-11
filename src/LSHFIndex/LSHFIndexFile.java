@@ -6,13 +6,15 @@ import bufmgr.*;
 import diskmgr.*;
 import global.*;
 import heap.*;
+import iterator.FileScan;
+import iterator.FldSpec;
+import iterator.RelSpec;
+import iterator.Sort;
 
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
     private static FileOutputStream fileOutputStream;
@@ -34,7 +36,7 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
         }
     }
 
-
+    // l -> compound hash -> (h1, h2, h3,... hn)-> n-> h
     // this means the index file is new and the header pages have to be created
     public LSHFIndexFile(String fileName, int h, int l) throws GetFileEntryException, InvalidPageNumberException, IOException, FileIOException, DiskMgrException, FileNameTooLongException, InvalidRunSizeException, DuplicateEntryException, OutOfSpaceException, ConstructPageException, HashEntryNotFoundException, BufferPoolExceededException, PageNotReadException, FieldNumberOutOfBoundException, HashOperationException, BufMgrException, PagePinnedException, InvalidFrameNumberException, PageUnpinnedException, ReplacerException, InvalidTupleSizeException, InvalidTypeException, PageNotFoundException {
         PageId headerPageId = SystemDefs.JavabaseDB.get_file_entry(fileName);
@@ -184,46 +186,78 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
         return leafPageIds;
     }
 
-    private List<LSHDto> _nearestNeighboursEachLayer(int currentPageId,Vector100Dtype v, int k, LSHLayer layer) throws ConstructPageException, FieldNumberOutOfBoundException, InvalidSlotNumberException, InvalidTupleSizeException, IOException, InvalidTypeException, HashEntryNotFoundException, InvalidFrameNumberException, PageUnpinnedException, ReplacerException {
+    private int _nearestNeighboursEachLayer(int currentPageId, Vector100Dtype v, int k, LSHLayer layer, Heapfile hf, boolean considerAll, Set<Integer> heapFilePages, Set<String> rids) throws ConstructPageException, FieldNumberOutOfBoundException, InvalidSlotNumberException, InvalidTupleSizeException, IOException, InvalidTypeException, HashEntryNotFoundException, InvalidFrameNumberException, PageUnpinnedException, ReplacerException, SpaceNotAvailableException, HFDiskMgrException, HFException, HFBufMgrException {
+
         LSHBasePage basePage = new LSHBasePage(new PageId(currentPageId));
-        List<LSHDto> a = new ArrayList<>();
+        int a = 0;
         if(basePage.getPageType() == LSHFInnerPage.pageType){
-            LSHFInnerPage innerPage = new LSHFInnerPage(basePage);
-            int pageId = innerPage.getBucketByKey(v);
-            a = _nearestNeighboursEachLayer(pageId,v,k,layer);
-            if (a.size() < k) {
-                Iterator<List<LSHDto>> iterator = innerPage.expansionIterator(pageId);
-                while (iterator.hasNext() && a.size() < k) {
-                    List<LSHDto> next = iterator.next();
-                    for (LSHDto d : next) {
-                        a.addAll(_nearestNeighboursEachLayer(d.getPid(), v, k - a.size(), layer));
+            if (!considerAll) {
+                LSHFInnerPage innerPage = new LSHFInnerPage(basePage);
+                int pageId = innerPage.getBucketByKey(v);
+                a = _nearestNeighboursEachLayer(pageId,v,k,layer, hf, false, heapFilePages, rids);
+                if (a < k) {
+                    LSHFInnerPage.LSHInnerPageIterator iterator = innerPage.iterator();
+                    iterator.setExceptions(pageId);
+                    while (iterator.hasNext() && a < k) {
+                        LSHDto next = iterator.next();
+                        if (next.getPid()== -1){
+                            continue;
+                        }
+                        a += _nearestNeighboursEachLayer(next.getPid(), v, k - a, layer, hf, true, heapFilePages, rids);
                     }
                 }
+                SystemDefs.JavabaseBM.unpinPage(innerPage.getCurPage(), false);
             }
-            SystemDefs.JavabaseBM.unpinPage(innerPage.getCurPage(), false);
+            else{
+                LSHFInnerPage innerPage = new LSHFInnerPage(basePage);
+                LSHFInnerPage.LSHInnerPageIterator iterator = innerPage.iterator();
+                while (iterator.hasNext() && a < k) {
+                    LSHDto next = iterator.next();
+                    if (next.getPid()== -1){
+                        continue;
+                    }
+                    a += _nearestNeighboursEachLayer(next.getPid(), v, k - a, layer, hf, true, heapFilePages, rids);
+                }
+                SystemDefs.JavabaseBM.unpinPage(innerPage.getCurPage(), false);
+            }
+
         }
         else if (basePage.getPageType() == LSHFLeafPage.pageType){
             LSHFLeafPage leafPage = new LSHFLeafPage(basePage);
             Iterator<LSHDto> iterator = leafPage.iterator();
             while(iterator.hasNext()){
-                a.add(iterator.next());
+                LSHDto next = iterator.next();
+                if (!rids.contains(next.getPid()+"_"+next.getSid())) {
+                    RID rid = hf.insertRecord(next.toLeafTuple().getTupleByteArray());
+                    a = a + 1;
+                    heapFilePages.add(rid.pageNo.pid);
+                    rids.add(next.getPid()+ "_" + next.getSid());
+                }
             }
-            SystemDefs.JavabaseBM.unpinPage(leafPage.getCurPage(), false);
+//            SystemDefs.JavabaseBM.unpinPage(leafPage.getCurPage(), false); -> some weird error is being thrown here-> check why?
         }
         return a;
     }
 
-    public List<LSHDto> nearestNeighbourScan(Vector100Dtype v, int k) throws Exception {
+    public Sort nearestNeighbourScan(Vector100Dtype v, int k) throws Exception {
         LSHLayerMap layerMap = LSHLayerMap.getInstance();
         Iterator<LSHLayer> iter = layerMap.iterator();
-        List<LSHDto> a = new ArrayList<>();
-
+        String tempFileName = v.toString()+k+"nn_temp.heap";
+        Heapfile tempHf = new Heapfile(tempFileName);
+        int totalCollected = 0;
+        Set<Integer> heapFilePages = new HashSet<>();
+        Set<String> rids = new HashSet<>();
         while (iter.hasNext()) {
             LSHLayer layer = iter.next();
-            a.addAll(this._nearestNeighboursEachLayer(layer.getLayerStartPage(), v, k, layer));
+            totalCollected += this._nearestNeighboursEachLayer(layer.getLayerStartPage(), v, k, layer, tempHf, false, heapFilePages, rids);
         }
-        // right now returns more than k, need a top k choosing logic
-        return a;
+        FldSpec[] projlist = {new FldSpec(new RelSpec(RelSpec.outer), 1),new FldSpec(new RelSpec(RelSpec.outer), 2), new FldSpec(new RelSpec(RelSpec.outer), 3)};
+        AttrType[] types = {new AttrType(AttrType.attrVector100D), new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)};
+        FileScan fs = new FileScan(tempFileName, types, null, (short)3, (short)3, projlist, null);
+        return new Sort(types, (short)3, null, fs, 1, new TupleOrder(TupleOrder.Ascending), 200,heapFilePages.size(), v, k);
+        // chaneg the number of heap file pages to scan
+        // also need to remove duplicate records for nn scan
+
     }
 
 }
