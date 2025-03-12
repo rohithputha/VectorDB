@@ -20,6 +20,10 @@ public class LSHLayerMap implements Iterable<LSHLayer> {
         totalNumLayers++;
     }
 
+    public int getLayerCount() {
+        return lshLayerMap.size();
+    }
+
     public LSHLayer getLayerByLayerId(int layerId){
         return this.lshLayerMap.get(layerId);
     }

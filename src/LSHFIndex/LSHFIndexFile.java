@@ -260,4 +260,56 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
 
     }
 
+    private List<LSHDto> _rangeScanEachLayer(int currentPageId,Vector100Dtype v, int distance, LSHLayer layer) throws ConstructPageException, FieldNumberOutOfBoundException, InvalidSlotNumberException, InvalidTupleSizeException, IOException, InvalidTypeException, HashEntryNotFoundException, InvalidFrameNumberException, PageUnpinnedException, ReplacerException {
+        LSHBasePage basePage = new LSHBasePage(new PageId(currentPageId));
+        List<LSHDto> a = new ArrayList<>();
+        if(basePage.getPageType() == LSHFInnerPage.pageType){
+            LSHFInnerPage innerPage = new LSHFInnerPage(basePage);
+            int pageId = innerPage.getBucketByKey(v);
+            if (pageId != -1){
+                a.addAll(_rangeScanEachLayer(pageId, v, distance, layer));
+            }
+            Iterator<List<LSHDto>> iterator = innerPage.expansionIterator(pageId);
+            while (iterator.hasNext()){
+                List<LSHDto> next = iterator.next();
+                for (LSHDto d : next) {
+                    a.addAll(_rangeScanEachLayer(d.getPid(), v, distance, layer));
+                }
+            }
+            // SystemDefs.JavabaseBM.unpinPage(innerPage.getCurPage(), false);
+        }
+        else if (basePage.getPageType() == LSHFLeafPage.pageType){
+            LSHFLeafPage leafPage = new LSHFLeafPage(basePage);
+            Iterator<LSHDto> iterator = leafPage.iterator();
+            while(iterator.hasNext()){
+                LSHDto next = iterator.next();
+                int dist = v.distanceTo(next.getV());
+                if (dist <= distance){
+                    a.add(next);
+                }
+            }
+            // SystemDefs.JavabaseBM.unpinPage(leafPage.getCurPage(), false);
+        }
+        return a;
+    }
+
+    public List<LSHDto> rangeScan(Vector100Dtype v, int distance) throws Exception {
+        LSHLayerMap layerMap = LSHLayerMap.getInstance();
+
+        // System.out.println("LSHLayerMap size: " + layerMap.getLayerCount());
+
+        Iterator<LSHLayer> iter = layerMap.iterator();
+
+        // System.out.println("Iterator assigned: " + (iter != null ? iter.getClass().getName() : "null"));
+
+        List<LSHDto> a = new ArrayList<>();
+
+        while (iter.hasNext()) {
+
+            LSHLayer layer = iter.next();
+            a.addAll(this._rangeScanEachLayer(layer.getLayerStartPage(), v, distance, layer));
+        }
+        return a;
+    }
+
 }
