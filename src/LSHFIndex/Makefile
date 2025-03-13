@@ -1,5 +1,5 @@
-JDKPATH = /usr/lib/jvm/java-23-amazon-corretto
-LIBPATH = /home/ubuntu/VectorDB/src/
+JDKPATH = /usr/lib/jvm/jdk-23.0.2-oracle-x64
+LIBPATH = /home/ubuntu/VectorDB/src
 CLASSPATH = $(JDKPATH)/lib/classes.zip:.:..:$(LIBPATH)
 BINPATH = $(JDKPATH)/bin
 JAVAC = $(JDKPATH)/bin/javac -classpath $(CLASSPATH)
