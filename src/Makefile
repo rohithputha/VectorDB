@@ -4,7 +4,7 @@
 #the assignment to be generated
 
 JARFILES=bufmgr/*.class diskmgr/*.class global/*.class iterator/*.class\
-         heap/*.class chainexception/*.class  btree/*.class index/*.class tests/*.class
+         heap/*.class chainexception/*.class  btree/*.class index/*.class tests/*.class 
 
 JDKPATH = /usr
 LIBPATH = .:..
@@ -38,6 +38,8 @@ db:
 	make -C index
 	make -C iterator
 	make -C LSHFIndex
+	make -C query
+	make -C batchinsert
 	
 doc:
 	$(JAVADOC) $(DOCFILES)
