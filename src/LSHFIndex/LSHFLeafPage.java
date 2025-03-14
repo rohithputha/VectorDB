@@ -60,7 +60,7 @@ public class LSHFLeafPage extends LSHBasePage implements Iterable<LSHDto> {
         this.pageId = basePage.getCurPage();
         try{
             SystemDefs.JavabaseBM.pinPage(pageId, this, false);
-            SystemDefs.JavabaseBM.unpinPage(pageId, false);
+            // SystemDefs.JavabaseBM.unpinPage(pageId, false);
         } catch (Exception e) {
             throw new ConstructPageException(e, "pin page failed. failed to construct LSHLeafPage");
         }

@@ -35,22 +35,26 @@ public class LSHFFileRangeScanTest {
         System.out.println("MiniBase initialized with " + num_pages + " buffer pages");
 
         System.out.println("Setting up LSHFIndexFile...");
-        LSHFIndexFile indexFile  = new LSHFIndexFile("lshindex",10,3);
+        LSHFIndexFile indexFile  = new LSHFIndexFile("lshindex",3,3);
         indexFile.close();
 
 
         short[] v1Data = new short[100];
         short[] v2Data = new short[100];
         short[] v3Data = new short[100];
+        short[] v4Data = new short[100];
 
         v2Data[0] = 1;
         v2Data[1] = 1;
         v3Data[0] = 2;
         v3Data[1] = 2;
+        v4Data[0] = 3;
+        v4Data[1] = 3;
 
         Vector100Dtype v1 = new Vector100Dtype(v1Data);
         Vector100Dtype v2 = new Vector100Dtype(v2Data);
         Vector100Dtype v3 = new Vector100Dtype(v3Data);
+        Vector100Dtype v4 = new Vector100Dtype(v4Data);
 
         System.out.println("Inserting test vectors...");
 
@@ -63,8 +67,11 @@ public class LSHFFileRangeScanTest {
         indexFile.insert(v3, new RID(new PageId(1), 2));
         System.out.println("Inserted: (" + v3.get(0) + "," + v3.get(1) + ",0,0,..)");
 
+        indexFile.insert(v4, new RID(new PageId(1), 3));
+        System.out.println("Inserted: (" + v4.get(0) + "," + v4.get(1) + ",0,0,..)");
+
         Vector100Dtype query = new Vector100Dtype(v1Data);
-        int radius = 3;
+        int radius = 2;
         
         try {
             System.out.println("RangeScan - Q: (" + v1.get(0) + "," + v1.get(1) + ") and R:" + radius + "...");
