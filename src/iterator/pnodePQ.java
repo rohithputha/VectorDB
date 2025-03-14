@@ -1,5 +1,6 @@
 
 package iterator;
+import LSHFIndex.LSHLayer;
 import global.*;
 import bufmgr.*;
 import diskmgr.*;
@@ -8,9 +9,9 @@ import java.io.*;
 
 /**
  * Implements a sorted binary tree.
- * abstract methods <code>enq</code> and <code>deq</code> are used to add 
+ * abstract methods <code>enq</code> and <code>deq</code> are used to add
  * or remove elements from the tree.
- */  
+ */
 public abstract class pnodePQ
 {
   /** number of elements in the tree */
@@ -25,23 +26,26 @@ public abstract class pnodePQ
   /** the sorting order (Ascending or Descending) */
   protected TupleOrder            sort_order;
 
+  protected Vector100Dtype target;
+
+  protected LSHLayer layer;
   /**
    * class constructor, set <code>count</code> to <code>0</code>.
    */
-  public pnodePQ() { count = 0; } 
+  public pnodePQ() { count = 0; }
 
   /**
    * returns the number of elements in the tree.
    * @return number of elements in the tree.
    */
-  public int       length(){ return count; }  
+  public int       length(){ return count; }
 
-  /** 
+  /**
    * tests whether the tree is empty
    * @return true if tree is empty, false otherwise
    */
   public boolean   empty() { return count == 0; }
-  
+
 
   /**
    * insert an element in the tree in the correct order.
@@ -51,8 +55,8 @@ public abstract class pnodePQ
    *                           <code>attrNull</code> encountered
    * @exception TupleUtilsException error in tuple compare routines
    */
-  abstract public void  enq(pnode  item) 
-           throws IOException, UnknowAttrType, TupleUtilsException;      
+  abstract public void  enq(pnode  item)
+          throws IOException, UnknowAttrType, TupleUtilsException;
 
   /**
    * removes the minimum (Ascending) or maximum (Descending) element
@@ -60,7 +64,7 @@ public abstract class pnodePQ
    * @return the element removed, null if the tree is empty
    */
   abstract public pnode    deq();
-	
+
 
   /**
    * compares two elements.
@@ -70,12 +74,18 @@ public abstract class pnodePQ
    *          <code>1</code> if <code>a</code> is greater,
    *         <code>-1</code> if <code>b</code> is greater
    * @exception IOException from lower layers
-   * @exception UnknowAttrType <code>attrSymbol</code> or 
+   * @exception UnknowAttrType <code>attrSymbol</code> or
    *                           <code>attrNull</code> encountered
    * @exception TupleUtilsException error in tuple compare routines
    */
-  public int pnodeCMP(pnode a, pnode b) 
-         throws IOException, UnknowAttrType, TupleUtilsException {
+  public int pnodeCMP(pnode a, pnode b)
+          throws IOException, UnknowAttrType, TupleUtilsException {
+    if(fld_type.attrType == AttrType.attrVector100D && target != null){
+      return TupleUtils.CompareTupleWithTuple(fld_type,a.tuple, fld_no,b.tuple, fld_no, target);
+    }
+    else if (fld_type.attrType == AttrType.attrVector100D && target == null){
+      return TupleUtils.CompareTupleWithTuple(fld_type,a.tuple, fld_no,b.tuple, fld_no, layer);
+    }
     int ans = TupleUtils.CompareTupleWithTuple(fld_type, a.tuple, fld_no, b.tuple, fld_no);
     return ans;
   }
@@ -87,14 +97,14 @@ public abstract class pnodePQ
    * @return <code>true</code> if <code>a == b</code>,
    *         <code>false</code> otherwise
    * @exception IOException from lower layers
-   * @exception UnknowAttrType <code>attrSymbol</code> or 
+   * @exception UnknowAttrType <code>attrSymbol</code> or
    *                           <code>attrNull</code> encountered
    * @exception TupleUtilsException error in tuple compare routines
-   */  
+   */
   public boolean pnodeEQ(pnode a, pnode b) throws IOException, UnknowAttrType, TupleUtilsException {
     return pnodeCMP(a, b) == 0;
   }
-  
+
   /**
    * tests whether the a is less than or equal to b
    * @param a one of the element for comparison
@@ -104,14 +114,14 @@ public abstract class pnodePQ
    * @exception IOException from lower layers
    * @exception UnknowAttrType attrSymbol or attrNull encountered
    * @exception TupleUtilsException error in tuple compare routines
-   */  
+   */
   /*
   public boolean pnodeLE(pnode a, pnode b)throws IOException, UnknowAttrType, TupleUtilsException {
-    if (sort_order.tupleOrder == TupleOrder.Ascending) 
+    if (sort_order.tupleOrder == TupleOrder.Ascending)
       return pnodeCMP(a, b) <= 0;
     else if (sort_order.tupleOrder == TupleOrder.Descending)
       return pnodeCMP(a, b) >= 0;
-    else throw new UnknowAttrType("error in pnodePQ.java"); 
+    else throw new UnknowAttrType("error in pnodePQ.java");
   }
   */
   /*
