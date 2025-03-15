@@ -7,7 +7,7 @@ import iterator.RelSpec;
 
 public class NNIndexScanTest {
     public static void main(String[] args) throws Exception {
-        String dbpath = "testdb";
+        String dbpath = "mydb";
         int num_pages = GlobalConst.MINIBASE_BUFFER_POOL_SIZE;
         SystemDefs sysdef = new SystemDefs(dbpath, 0, 50, "Clock");
         System.out.println("MiniBase initialized with " + num_pages + " buffer pages");
@@ -133,13 +133,13 @@ public class NNIndexScanTest {
 //        }
         NNIndexScan nnIndexScan = new NNIndexScan(
                 new IndexType(IndexType.LSHFIndex),
-                "testdb",
-                "testdb1_10_5",
-                new AttrType[]{new AttrType(AttrType.attrReal),new AttrType(AttrType.attrVector100D),new AttrType(AttrType.attrReal),new AttrType(AttrType.attrVector100D),new AttrType(AttrType.attrReal),new AttrType(AttrType.attrVector100D)},
+                "mydb",
+                "mydb3_5_5",
+                new AttrType[]{new AttrType(AttrType.attrReal),new AttrType(AttrType.attrVector100D),new AttrType(AttrType.attrReal),new AttrType(AttrType.attrVector100D)},
                 null,
-                6,
-                6,
-                new FldSpec[]{new FldSpec(new RelSpec(RelSpec.outer), 1), new FldSpec(new RelSpec(RelSpec.outer), 2), new FldSpec(new RelSpec(RelSpec.outer), 3), new FldSpec(new RelSpec(RelSpec.outer), 4), new FldSpec(new RelSpec(RelSpec.outer), 5),new FldSpec(new RelSpec(RelSpec.outer), 6)},
+                4,
+                4,
+                new FldSpec[]{new FldSpec(new RelSpec(RelSpec.outer), 1), new FldSpec(new RelSpec(RelSpec.outer), 2), new FldSpec(new RelSpec(RelSpec.outer), 3), new FldSpec(new RelSpec(RelSpec.outer), 4)},
                 null,
                 2,
                 createVector(2),
@@ -148,8 +148,8 @@ public class NNIndexScanTest {
         while(true){
             Tuple t = nnIndexScan.get_next();
             if (t != null) {
-                t.setHdr((short)6, new AttrType[]{new AttrType(AttrType.attrReal),new AttrType(AttrType.attrVector100D),new AttrType(AttrType.attrReal),new AttrType(AttrType.attrVector100D),new AttrType(AttrType.attrReal),new AttrType(AttrType.attrVector100D)}, null);
-                Vector100Dtype v = t.get100DVectFld(2);
+                t.setHdr((short)4, new AttrType[]{new AttrType(AttrType.attrReal),new AttrType(AttrType.attrVector100D),new AttrType(AttrType.attrReal),new AttrType(AttrType.attrVector100D)}, null);
+                Vector100Dtype v = t.get100DVectFld(4);
                 for (int i=0;i<100;i++){
                     System.out.print(v.get(i)+", ");
                 }

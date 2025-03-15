@@ -283,57 +283,96 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
 
     }
 
+    private boolean _rangeScanEachLayer(int currentPageId, Vector100Dtype v, 
+        int distance, LSHLayer layer, Heapfile hf, Set<Integer> heapFilePages, 
+        Set<String> rids, double notMatchingLimit) 
+        throws ConstructPageException, FieldNumberOutOfBoundException, 
+        InvalidSlotNumberException, InvalidTupleSizeException, IOException, 
+        InvalidTypeException, HashEntryNotFoundException, InvalidFrameNumberException, 
+        PageUnpinnedException, ReplacerException, SpaceNotAvailableException, HFException, 
+        HFBufMgrException, HFDiskMgrException {
+            LSHBasePage basePage = new LSHBasePage(new PageId(currentPageId), this.fileName);
+            boolean scanNext = true;
+            if(basePage.getPageType() == LSHFInnerPage.pageType){
+                LSHFInnerPage innerPage = new LSHFInnerPage(basePage, this.fileName);
+                int hashIndex = innerPage.getHashFunctionInConsideration();
+                int pageId = innerPage.getBucketByKey(v);
+                if (pageId != -1){
+                    scanNext = _rangeScanEachLayer(pageId, v, distance, layer, hf, heapFilePages, rids, notMatchingLimit);
+                    if (!scanNext){
+                        SystemDefs.JavabaseBM.unpinPage(innerPage.getCurPage(), false);
+                        return false;
+                    }
+                }
+                LSHFInnerPage.LSHInnerPageIterator iterator = innerPage.iterator();
+                while (scanNext && iterator.hasNext()) {
+                    LSHDto next = iterator.next();
+                    if (next.getPid()== -1 || next.getPid() == pageId){
+                        continue;
+                    }
+                    scanNext = _rangeScanEachLayer(next.getPid(), v, distance, layer, hf, heapFilePages, rids, notMatchingLimit);
+                }
+                SystemDefs.JavabaseBM.unpinPage(innerPage.getCurPage(), false);
+            }
+            else if (basePage.getPageType() == LSHFLeafPage.pageType){
+                LSHFLeafPage leafPage = new LSHFLeafPage(basePage, this.fileName);
+                Iterator<LSHDto> iterator = leafPage.iterator();
+                int leafRecordCount = 0;
+                int selectRecordCount = 0;
+                while(iterator.hasNext()){
+                    leafRecordCount += 1;
+                    LSHDto next = iterator.next();
+                    int dist = v.distanceTo(next.getV());
+                    if (dist <= distance){
+                        String ridKey = next.getPid() + "_" + next.getSid();
+                        if (!rids.contains(ridKey)) {
+                            RID rid = hf.insertRecord(next.toLeafTuple().getTupleByteArray());
+                            heapFilePages.add(rid.pageNo.pid);
+                            rids.add(ridKey);
+                        }
+                        selectRecordCount += 1;
+                    }
+                }
+                SystemDefs.JavabaseBM.unpinPage(leafPage.getCurPage(), false);
 
-    private List<LSHDto> _rangeScanEachLayer(int currentPageId,Vector100Dtype v, int distance, LSHLayer layer) throws ConstructPageException, FieldNumberOutOfBoundException, InvalidSlotNumberException, InvalidTupleSizeException, IOException, InvalidTypeException, HashEntryNotFoundException, InvalidFrameNumberException, PageUnpinnedException, ReplacerException {
-        LSHBasePage basePage = new LSHBasePage(new PageId(currentPageId), this.fileName);
-        List<LSHDto> a = new ArrayList<>();
-        if(basePage.getPageType() == LSHFInnerPage.pageType){
-            LSHFInnerPage innerPage = new LSHFInnerPage(basePage, this.fileName);
-            int pageId = innerPage.getBucketByKey(v);
-            if (pageId != -1){
-                a.addAll(_rangeScanEachLayer(pageId, v, distance, layer));
-            }
-            Iterator<List<LSHDto>> iterator = innerPage.expansionIterator(pageId);
-            while (iterator.hasNext()){
-                List<LSHDto> next = iterator.next();
-                for (LSHDto d : next) {
-                    a.addAll(_rangeScanEachLayer(d.getPid(), v, distance, layer));
+                int notMatchingCount = leafRecordCount - selectRecordCount;
+                if (leafRecordCount == 0){
+                    scanNext = false;
+                } else if ((double) notMatchingCount/leafRecordCount * 100 > notMatchingLimit) {
+                    scanNext = false;
                 }
             }
-            // SystemDefs.JavabaseBM.unpinPage(innerPage.getCurPage(), false);
-        }
-        else if (basePage.getPageType() == LSHFLeafPage.pageType){
-            LSHFLeafPage leafPage = new LSHFLeafPage(basePage, this.fileName);
-            Iterator<LSHDto> iterator = leafPage.iterator();
-            while(iterator.hasNext()){
-                LSHDto next = iterator.next();
-                int dist = v.distanceTo(next.getV());
-                if (dist <= distance){
-                    a.add(next);
-                }
-            }
-            // SystemDefs.JavabaseBM.unpinPage(leafPage.getCurPage(), false);
-        }
-        return a;
+        return scanNext;
     }
 
-    public List<LSHDto> rangeScan(Vector100Dtype v, int distance) throws Exception {
+    public Sort rangeScan(Vector100Dtype v, int distance) throws Exception {
         LSHLayerMap layerMap = LSHLayerMap.getInstance(this.fileName);
-
-        // System.out.println("LSHLayerMap size: " + layerMap.getLayerCount());
-
         Iterator<LSHLayer> iter = layerMap.iterator();
+        String tempFileName = v.toString()+distance+"range_temp.heap";
+        Heapfile tempHf = new Heapfile(tempFileName);
+        Set<Integer> heapFilePages = new HashSet<>();
+        Set<String> rids = new HashSet<>();
 
-        // System.out.println("Iterator assigned: " + (iter != null ? iter.getClass().getName() : "null"));
+        boolean scanNext = true;
 
-        List<LSHDto> a = new ArrayList<>();
-
-        while (iter.hasNext()) {
-
+        while (iter.hasNext() && scanNext) {
             LSHLayer layer = iter.next();
-            a.addAll(this._rangeScanEachLayer(layer.getLayerStartPage(), v, distance, layer));
+            layer.getLayerStartPage();
+            scanNext = this._rangeScanEachLayer(layer.getLayerStartPage(), v, distance, layer, tempHf, heapFilePages, rids, 70.0);
         }
-        return a;
+        FldSpec[] projlist = {
+            new FldSpec(new RelSpec(RelSpec.outer), 1),
+            new FldSpec(new RelSpec(RelSpec.outer), 2), 
+            new FldSpec(new RelSpec(RelSpec.outer), 3)
+            };
+        AttrType[] types = {
+            new AttrType(AttrType.attrVector100D), 
+            new AttrType(AttrType.attrInteger), 
+            new AttrType(AttrType.attrInteger)
+            };
+        FileScan fs = new FileScan(tempFileName, types, null, (short)3, (short)3, projlist, null);
+        return new Sort(types, (short)3, null, fs, 1, new TupleOrder(TupleOrder.Ascending), 200, heapFilePages.size(), v, rids.size());
     }
+    
 
 }

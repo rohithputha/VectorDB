@@ -13,6 +13,8 @@ public class SystemDefs {
   public static String  JavabaseLogName;
   public static boolean MINIBASE_RESTART_FLAG = false;
   public static String	MINIBASE_DBNAME;
+//   public static int h;
+//   public static int L;
   
   public SystemDefs (){};
   
@@ -93,4 +95,11 @@ public class SystemDefs {
 	}
       }
     }
+
+//     public void seth(int h) {
+//       this.h = h;
+//   }
+//   public void setl(int l) {
+//       this.L = l;
+//   }
 }

@@ -1,26 +1,72 @@
 package global;
 
-public class Vector100Dtype{
-    private static final int DIMENSIONS = 100;
-    private short[] vector;
+import java.util.Iterator;
 
-    //normal constructor
-    public Vector100Dtype(){
-        vector = new short[DIMENSIONS];
+public class Vector100Dtype implements Iterable<Short> {
+
+    private final short[] vector;
+
+    public Vector100Dtype() {
+        vector = new short[100];
     }
 
-    //initiating with some values
-    public Vector100Dtype(short[] values){
-        if(values.length != DIMENSIONS){
-            throw new IllegalArgumentException("Length less than 100");
+    public Vector100Dtype(short[] vector) {
+        this.vector = vector;
+    }
+
+    public void add(short value, int index) throws IndexOutOfBoundsException, NullPointerException {
+        try {
+            vector[index] = value;
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.err.println("ArrayIndexOutOfBoundsException at vector add");
+            throw e;
+        } catch (NullPointerException e) {
+            System.err.println("NullPointerException at vector add");
+            throw e;
         }
-        vector = new short[DIMENSIONS];
-        for(int i=0; i<DIMENSIONS; i++){
-            if(values[i]<-10000 || values[i]>10000){
-                throw new IllegalArgumentException("Value out of bound");
-            }
-            vector[i]=values[i];
+    }
+
+    public short get(int index) {
+        try {
+            return vector[index];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.err.println("ArrayIndexOutOfBoundsException at vector get");
+            throw e;
+        } catch (NullPointerException e) {
+            System.err.println("NullPointerException at vector get");
+            throw e;
         }
+    }
+
+    @Override
+    public Iterator<Short> iterator() {
+        return new VectorIterator();
+    }
+
+    private class VectorIterator implements Iterator<Short> {
+        private int index = 0;
+
+        @Override
+        public boolean hasNext() {
+            return index < vector.length;
+        }
+
+        @Override
+        public Short next() {
+            return vector[index++];
+        }
+    }
+
+
+    public double getDistance(Vector100Dtype other) {
+
+        Iterator<Short> thisIterator = this.iterator();
+        Iterator<Short> otherIterator = other.iterator();
+        double sumSquares = 0.0;
+        while (thisIterator.hasNext() && otherIterator.hasNext()) {
+            sumSquares += Math.pow(thisIterator.next() - otherIterator.next(), 2);
+        }
+        return Math.sqrt(sumSquares);
     }
 
     public int distanceTo(Vector100Dtype other) {
@@ -28,15 +74,55 @@ public class Vector100Dtype{
             throw new IllegalArgumentException("Cannot compute distance to null vector");
         }
         long sum = 0; // Use long to avoid overflow during summation
-        for (int i = 0; i < DIMENSIONS; i++) {
+        for (int i = 0; i < 100; i++) {
             int diff = this.vector[i] - other.vector[i];
-            sum += diff * diff;
+            sum = sum + (diff * diff);
         }
         return (int) Math.sqrt(sum); // Cast to int as per project spec
     }
 
-    public short[] getVector() {
-        return vector.clone();
+    public short compareTo(Vector100Dtype other, int dist) {
+        double calculatedDistance = this.getDistance(other);
+        if (calculatedDistance < dist) {
+            return -1;
+        } else if (calculatedDistance > dist) {
+            return 1;
+        }
+        return 0;
     }
 
+    public short[] getVector() {
+        return vector;
+    }
+
+    public Vector100Dtype(boolean t){
+        if(t){
+            vector = new short[100];
+            for (int i=0;i<100;i++){
+                vector[i] = Short.MIN_VALUE;
+            }
+        }
+        else{
+            vector = new short[100];
+            for (int i=0;i<100;i++){
+                vector[i] = Short.MAX_VALUE;
+            }
+        }
+    }
+
+    public void set(int index, short value){
+        try{
+            vector[index]=value;
+        }
+        catch(ArrayIndexOutOfBoundsException e){
+            System.err.println("ArrayIndexOutOfBoundsException at vector set");
+            throw e;
+        }
+        catch(NullPointerException e){
+            System.err.println("NullPointerException at vector set");
+            throw e;
+        }
+        
+        
+    }
 }

@@ -37,6 +37,8 @@ db:
 	make -C heap
 	make -C index
 	make -C iterator
+	make -C query
+	make -C batchinsert
 	
 doc:
 	$(JAVADOC) $(DOCFILES)
