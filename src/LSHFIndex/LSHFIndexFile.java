@@ -36,7 +36,7 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
         }
     }
 
- // l -> compound hash -> (h1, h2, h3,... hn)-> n-> h
+    // l -> compound hash -> (h1, h2, h3,... hn)-> n-> h
     // this means the index file is new and the header pages have to be created
     public LSHFIndexFile(String fileName, int h, int l) throws GetFileEntryException, InvalidPageNumberException, IOException, FileIOException, DiskMgrException, FileNameTooLongException, InvalidRunSizeException, DuplicateEntryException, OutOfSpaceException, ConstructPageException, HashEntryNotFoundException, BufferPoolExceededException, PageNotReadException, FieldNumberOutOfBoundException, HashOperationException, BufMgrException, PagePinnedException, InvalidFrameNumberException, PageUnpinnedException, ReplacerException, InvalidTupleSizeException, InvalidTypeException, PageNotFoundException {
         PageId headerPageId = SystemDefs.JavabaseDB.get_file_entry(fileName);
@@ -72,10 +72,11 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
         if (headerPageId == null) {
             throw new GetFileEntryException(fileName);
         }
+
         this.headerPageId = headerPageId;
         this.headerPage = new LSHHeaderPage(headerPageId);// this should construct the layer and hash functions map...
-        this.headerPage.getHashFunctions(this.fileName);
         this.h = this.headerPage.getHashFunctionsPerLayer();
+        this.headerPage.getHashFunctions(this.fileName);
         LSHashFunctionsMap functionsMap = LSHashFunctionsMap.getInstance(this.fileName);
         this.headerPage.getLayers(h, this.fileName);
         LSHLayerMap layerMap = LSHLayerMap.getInstance(this.fileName);
@@ -150,8 +151,9 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
             HashEntryNotFoundException,
             ReplacerException, PageNotFoundException, HashOperationException, BufMgrException, PagePinnedException, IOException {
         if (headerPage != null) {
+//            SystemDefs.JavabaseBM.flushAllPages();
             SystemDefs.JavabaseBM.unpinPage(headerPageId, true);
-            SystemDefs.JavabaseBM.flushAllPages();
+//            SystemDefs.JavabaseBM.flushAllPages();
             headerPage = null;
         }
     }
@@ -202,44 +204,59 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
             if (!considerAll) {
                 LSHFInnerPage innerPage = new LSHFInnerPage(basePage, this.fileName);
                 int pageId = innerPage.getBucketByKey(v);
-
+                int hashInConsideration = innerPage.getHashInConsideration(v);
                 if (pageId != INVALID_PAGE){
                     a = _nearestNeighboursEachLayer(pageId,v,k,layer, hf, false, heapFilePages, rids);
                     if (a < k) {
-                        LSHFInnerPage.LSHInnerPageIterator iterator = innerPage.iterator();
+                        Iterator<List<LSHDto>> iterator = innerPage.expansionIterator(hashInConsideration);
                         while (iterator.hasNext() && a < k) {
-                            LSHDto next = iterator.next();
-                            if (next.getPid()== -1){
-                                continue;
+                            List<LSHDto> next = iterator.next();
+
+                            for (LSHDto dto : next) {
+                                if (dto.getPid()== -1){
+                                    continue;
+                                }
+                                if (dto.getPid() == pageId){
+                                    continue;
+                                }
+                                a += _nearestNeighboursEachLayer(dto.getPid(), v, k - a, layer, hf, true, heapFilePages, rids);
                             }
-                            if (next.getPid() == pageId){
-                                continue;
-                            }
-                            a += _nearestNeighboursEachLayer(next.getPid(), v, k - a, layer, hf, true, heapFilePages, rids);
+
                         }
                     }
                 }
                 else {
-                    LSHFInnerPage.LSHInnerPageIterator iterator = innerPage.iterator();
+                    Iterator<List<LSHDto>> iterator = innerPage.expansionIterator(hashInConsideration);
                     while (iterator.hasNext() && a < k) {
-                        LSHDto next = iterator.next();
-                        if (next.getPid()== -1){
-                            continue;
+                        List<LSHDto> next = iterator.next();
+
+                        for (LSHDto dto : next) {
+                            if (dto.getPid()== -1){
+                                continue;
+                            }
+                            if (dto.getPid() == pageId){
+                                continue;
+                            }
+                            a += _nearestNeighboursEachLayer(dto.getPid(), v, k - a, layer, hf, true, heapFilePages, rids);
                         }
-                        a += _nearestNeighboursEachLayer(next.getPid(), v, k - a, layer, hf, true, heapFilePages, rids);
+
                     }
                 }
                 SystemDefs.JavabaseBM.unpinPage(innerPage.getCurPage(), false);
             }
             else{
                 LSHFInnerPage innerPage = new LSHFInnerPage(basePage, this.fileName);
-                LSHFInnerPage.LSHInnerPageIterator iterator = innerPage.iterator();
+                int hashInConsideration = innerPage.getHashInConsideration(v);
+                Iterator<List<LSHDto>> iterator = innerPage.expansionIterator(hashInConsideration);
                 while (iterator.hasNext() && a < k) {
-                    LSHDto next = iterator.next();
-                    if (next.getPid()== -1){
-                        continue;
+                    List<LSHDto> next = iterator.next();
+                    for (LSHDto dto : next) {
+                        if (dto.getPid()== -1){
+                            continue;
+                        }
+                        a += _nearestNeighboursEachLayer(dto.getPid(), v, k - a, layer, hf, true, heapFilePages, rids);
                     }
-                    a = a + _nearestNeighboursEachLayer(next.getPid(), v, k - a, layer, hf, true, heapFilePages, rids);
+
                 }
                 SystemDefs.JavabaseBM.unpinPage(innerPage.getCurPage(), false);
             }
@@ -251,10 +268,18 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
             while(iterator.hasNext()){
                 LSHDto next = iterator.next();
                 if (!rids.contains(next.getPid()+"_"+next.getSid())) {
+                    long ed = next.getV().distanceTo(v);
+                    System.out.print("collected "+ed+" ");
+                    for (int i= 0;i<100;i++){
+                        System.out.print(next.getV().get(i)+",");
+                    }
+                    System.out.println();
+
                     RID rid = hf.insertRecord(next.toLeafTuple().getTupleByteArray());
                     a = a + 1;
                     heapFilePages.add(rid.pageNo.pid);
                     rids.add(next.getPid()+ "_" + next.getSid());
+                    System.out.println(rid.pageNo + "_" + rid.slotNo);
                 }
             }
             SystemDefs.JavabaseBM.unpinPage(leafPage.getCurPage(), false);
@@ -265,7 +290,9 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
     public Sort nearestNeighbourScan(Vector100Dtype v, int k) throws Exception {
         LSHLayerMap layerMap = LSHLayerMap.getInstance(this.fileName);
         Iterator<LSHLayer> iter = layerMap.iterator();
-        String tempFileName = v.toString()+k+"nn_temp.heap";
+        String tempFileName = "nn_temp";
+        Random random = new Random();
+        tempFileName = tempFileName+"_"+random.nextInt()+"_"+random.nextInt()+".heap";
         Heapfile tempHf = new Heapfile(tempFileName);
         int totalCollected = 0;
         Set<Integer> heapFilePages = new HashSet<>();
@@ -277,43 +304,42 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
         FldSpec[] projlist = {new FldSpec(new RelSpec(RelSpec.outer), 1),new FldSpec(new RelSpec(RelSpec.outer), 2), new FldSpec(new RelSpec(RelSpec.outer), 3)};
         AttrType[] types = {new AttrType(AttrType.attrVector100D), new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)};
         FileScan fs = new FileScan(tempFileName, types, null, (short)3, (short)3, projlist, null);
-        return new Sort(types, (short)3, null, fs, 1, new TupleOrder(TupleOrder.Ascending), 200,heapFilePages.size(), v, k);
-        // chaneg the number of heap file pages to scan
-        // also need to remove duplicate records for nn scan
-
+        System.out.println("Total collected " + totalCollected);
+        System.out.println("Total heap file pages " + heapFilePages.size());
+        return new Sort(types, (short)3, null, fs, 1, new TupleOrder(TupleOrder.Ascending), 200,1, v, k);
     }
 
 
     private List<LSHDto> _rangeScanEachLayer(int currentPageId,Vector100Dtype v, int distance, LSHLayer layer) throws ConstructPageException, FieldNumberOutOfBoundException, InvalidSlotNumberException, InvalidTupleSizeException, IOException, InvalidTypeException, HashEntryNotFoundException, InvalidFrameNumberException, PageUnpinnedException, ReplacerException {
         LSHBasePage basePage = new LSHBasePage(new PageId(currentPageId), this.fileName);
         List<LSHDto> a = new ArrayList<>();
-        if(basePage.getPageType() == LSHFInnerPage.pageType){
-            LSHFInnerPage innerPage = new LSHFInnerPage(basePage, this.fileName);
-            int pageId = innerPage.getBucketByKey(v);
-            if (pageId != -1){
-                a.addAll(_rangeScanEachLayer(pageId, v, distance, layer));
-            }
-            Iterator<List<LSHDto>> iterator = innerPage.expansionIterator(pageId);
-            while (iterator.hasNext()){
-                List<LSHDto> next = iterator.next();
-                for (LSHDto d : next) {
-                    a.addAll(_rangeScanEachLayer(d.getPid(), v, distance, layer));
-                }
-            }
-            // SystemDefs.JavabaseBM.unpinPage(innerPage.getCurPage(), false);
-        }
-        else if (basePage.getPageType() == LSHFLeafPage.pageType){
-            LSHFLeafPage leafPage = new LSHFLeafPage(basePage, this.fileName);
-            Iterator<LSHDto> iterator = leafPage.iterator();
-            while(iterator.hasNext()){
-                LSHDto next = iterator.next();
-                int dist = v.distanceTo(next.getV());
-                if (dist <= distance){
-                    a.add(next);
-                }
-            }
-            // SystemDefs.JavabaseBM.unpinPage(leafPage.getCurPage(), false);
-        }
+//        if(basePage.getPageType() == LSHFInnerPage.pageType){
+//            LSHFInnerPage innerPage = new LSHFInnerPage(basePage, this.fileName);
+//            int pageId = innerPage.getBucketByKey(v);
+//            if (pageId != -1){
+//                a.addAll(_rangeScanEachLayer(pageId, v, distance, layer));
+//            }
+//            Iterator<List<LSHDto>> iterator = innerPage.expansionIterator(pageId, lshDtos);
+//            while (iterator.hasNext()){
+//                List<LSHDto> next = iterator.next();
+//                for (LSHDto d : next) {
+//                    a.addAll(_rangeScanEachLayer(d.getPid(), v, distance, layer));
+//                }
+//            }
+//            // SystemDefs.JavabaseBM.unpinPage(innerPage.getCurPage(), false);
+//        }
+//        else if (basePage.getPageType() == LSHFLeafPage.pageType){
+//            LSHFLeafPage leafPage = new LSHFLeafPage(basePage, this.fileName);
+//            Iterator<LSHDto> iterator = leafPage.iterator();
+//            while(iterator.hasNext()){
+//                LSHDto next = iterator.next();
+//                int dist = v.distanceTo(next.getV());
+//                if (dist <= distance){
+//                    a.add(next);
+//                }
+//            }
+//            // SystemDefs.JavabaseBM.unpinPage(leafPage.getCurPage(), false);
+//        }
         return a;
     }
 

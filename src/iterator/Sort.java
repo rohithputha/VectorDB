@@ -179,7 +179,7 @@ public class Sort extends Iterator implements GlobalConst {
         int p_elems_curr_Q = 0;
         int p_elems_other_Q = 0;
 
-        int comp_res;
+        long comp_res;
 
 
         // maintain a fixed maximum number of elements in the heap
@@ -489,6 +489,9 @@ public class Sort extends Iterator implements GlobalConst {
                 //      lastElem.setHdr(fld_no, junk, s_size);
                 lastElem.setStrFld(_sort_fld, s);
                 break;
+            case AttrType.attrVector100D:
+                lastElem.set100DVectFld(_sort_fld, new Vector100Dtype(true));
+                break;
             default:
                 // don't know how to handle attrSymbol, attrNull
                 //System.err.println("error in sort.java");
@@ -770,5 +773,4 @@ public class Sort extends Iterator implements GlobalConst {
     }
 
 }
-
 

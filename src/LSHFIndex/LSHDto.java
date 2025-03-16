@@ -10,7 +10,7 @@ import heap.Tuple;
 
 import java.io.IOException;
 
-public class LSHDto {
+public class LSHDto implements Comparable<LSHDto> {
     private Vector100Dtype v;
     private int pid;
     private int sid;
@@ -37,6 +37,9 @@ public class LSHDto {
     public int getSid() {
         return sid;
     }
+    public int getHash(){
+        return hash;
+    }
     public Tuple toLeafTuple() throws InvalidTupleSizeException, IOException, InvalidTypeException, FieldNumberOutOfBoundException {
         Tuple tuple = new Tuple();
         tuple.setHdr((short)3, new AttrType[]{new AttrType(AttrType.attrVector100D), new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)}, null);
@@ -44,5 +47,10 @@ public class LSHDto {
         tuple.setIntFld(2, pid);
         tuple.setIntFld(3, sid);
         return tuple;
+    }
+
+    @Override
+    public int compareTo(LSHDto o) {
+        return Integer.compare(this.getHash(), o.getHash());
     }
 }

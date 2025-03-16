@@ -2,12 +2,11 @@ package LSHFIndex;
 
 import global.Vector100Dtype;
 
-public class LSHHashDto extends LSHDto implements Comparable<LSHHashDto> {
+public class LSHHashDto implements Comparable<LSHHashDto> {
 
     private int[] compoundHash;
     private int layerId;
     public LSHHashDto(Vector100Dtype v, int pid, int sid, int layerId, String indexName) {
-        super(v, pid, sid);
         this.layerId = layerId;
         compoundHash = LSHLayerMap.getInstance(indexName).getLayerByLayerId(layerId).getCompoundHash(v, LSHashFunctionsMap.getInstance(indexName));
     }

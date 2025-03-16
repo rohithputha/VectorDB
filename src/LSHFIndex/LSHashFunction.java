@@ -14,9 +14,9 @@ public class LSHashFunction {
     }
 
     public int getHashValue(Vector100Dtype v){
-        long hash = 0L;
+        int hash = 0;
         for(int i = 0; i < 100;i++){
-            hash = hash + (((long) v.get(i) * vectA[i]))/1000;
+            hash = hash + ((v.get(i) * vectA[i]))/1000;
         }
         hash = hash + constB;
         hash = hash /1000;
