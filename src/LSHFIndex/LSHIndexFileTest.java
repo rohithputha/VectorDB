@@ -1,0 +1,39 @@
+package LSHFIndex;
+
+import btree.ConstructPageException;
+import btree.GetFileEntryException;
+import bufmgr.*;
+import diskmgr.*;
+import global.*;
+import heap.FieldNumberOutOfBoundException;
+import heap.InvalidSlotNumberException;
+import heap.InvalidTupleSizeException;
+import heap.InvalidTypeException;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+public class LSHIndexFileTest {
+    public static void main(String[] args) throws Exception {
+        String dbpath = "testdb1";
+        int num_pages = GlobalConst.MINIBASE_BUFFER_POOL_SIZE;
+        SystemDefs sysdef = new SystemDefs(dbpath, num_pages, num_pages, "Clock");
+        System.out.println("System defs: " + sysdef);
+        Page page = new Page();
+        SystemDefs.JavabaseDB.read_page(new PageId(2),page);
+        System.out.println(page.getpage());
+        System.out.println("MiniBase initialized with " + num_pages + " buffer pages");
+
+        LSHFIndexFile indexFile  = new LSHFIndexFile("lshindex",1,1);
+        indexFile.close();
+        indexFile = new LSHFIndexFile("lshindex");
+//        LSHFIndexFile indexFile = new LSHFIndexFile("lshindex");
+        indexFile.insert(new Vector100Dtype(), new RID(new PageId(10),20));
+        indexFile.insert(new Vector100Dtype(), new RID(new PageId(20),30));
+        SystemDefs.JavabaseDB.read_page(new PageId(2),page);
+        SystemDefs.JavabaseDB.closeDB();
+
+        int a[] = new int[0];
+//        indexFile.insert(new Vector100Dtype(),new RID(new PageId(1),2));
+    }
+}
