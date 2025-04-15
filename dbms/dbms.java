@@ -233,7 +233,7 @@ public class dbms {
 
         br.close();
 
-         System.out.println("Batch creation completed.");
+        System.out.println("Batch creation completed.");
         System.out.println("Total tuples inserted: " + tupleCount);
         
         // End the database session
