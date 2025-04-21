@@ -77,10 +77,14 @@ public class CreateIndex implements VectorDbCommand {
                 PageId pidhL = SystemDefs.JavabaseDB.get_file_entry("handL" + RELNAME);
                 Tuple x = new Tuple();
 
-                x.setHdr((short) 2, new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)},
+                // x.setHdr((short) 2, new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)},
+                //         null);
+
+                x.setHdr((short) 3, new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)},
                         null);
                 x.setIntFld(1, h);
                 x.setIntFld(2, L);
+                x.setIntFld(3, COLUMN_ID);
 
                 if(pidhL == null){
                     Page page_x = new Page();
@@ -95,7 +99,7 @@ public class CreateIndex implements VectorDbCommand {
                 else{
                     HFPage hfPage_x = new HFPage();
                     SystemDefs.JavabaseBM.pinPage(pidhL, hfPage_x, false);
-                    hfPage_x.deleteRecord(new RID(new PageId(pidhL.pid), 0));
+                    // hfPage_x.deleteRecord(new RID(new PageId(pidhL.pid), 0));
                     hfPage_x.insertRecord(x.getTupleByteArray());
                     SystemDefs.JavabaseBM.unpinPage(hfPage_x.getCurPage(), true);
                 }
@@ -124,7 +128,7 @@ public class CreateIndex implements VectorDbCommand {
                         if (tuple != null) {
                             tuple.setHdr((short) input_fields_length, schemaAttrTypes, strSizes);
                             Vector100Dtype vector = tuple.get100DVectFld(COLUMN_ID + 1);
-                            System.out.println(vector.get(0)+" "+rid.pageNo.pid+" "+rid.slotNo);
+                            // System.out.println(vector.get(0)+" "+rid.pageNo.pid+" "+rid.slotNo);
                             indexFile.insert(vector, rid);
                         }
                     }

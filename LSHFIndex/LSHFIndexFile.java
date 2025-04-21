@@ -108,7 +108,8 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
             }
             else {
                 LSHFLeafPage leafPage = new LSHFLeafPage(currentPage,this.fileName);
-                if (prevHashInConsideration == this.h-1){
+                // if (prevHashInConsideration == this.h-1){
+                if (prevHashInConsideration >= this.h-1){
                     leafPageFound = leafPage;
                 }
                 else{
@@ -152,7 +153,8 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
             ReplacerException, PageNotFoundException, HashOperationException, BufMgrException, PagePinnedException, IOException {
         if (headerPage != null) {
 //            SystemDefs.JavabaseBM.flushAllPages();
-            SystemDefs.JavabaseBM.unpinPage(headerPageId, true);
+            // SystemDefs.JavabaseBM.unpinPage(headerPageId, true);
+            SystemDefs.JavabaseBM.unpinPage(headerPage.getCurPage(), true);
 //            SystemDefs.JavabaseBM.flushAllPages();
             headerPage = null;
         }
