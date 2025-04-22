@@ -231,6 +231,7 @@ public class BatchInsertCommand implements VectorDbCommand {
                             // System.out.println("ColId: " + colId);
 
                             String indexName = RELNAME + "_" + colId + "_" + L + "_" + h;
+                            
                             // LSHFIndex.LSHFIndexFile indexFile = new LSHFIndex.LSHFIndexFile(indexName, h, L);
                             LSHFIndex.LSHFIndexFile indexFile = new LSHFIndex.LSHFIndexFile(indexName);
 
