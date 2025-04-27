@@ -36,7 +36,7 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
         }
     }
 
- // l -> compound hash -> (h1, h2, h3,... hn)-> n-> h
+    // l -> compound hash -> (h1, h2, h3,... hn)-> n-> h
     // this means the index file is new and the header pages have to be created
     public LSHFIndexFile(String fileName, int h, int l) throws GetFileEntryException, InvalidPageNumberException, IOException, FileIOException, DiskMgrException, FileNameTooLongException, InvalidRunSizeException, DuplicateEntryException, OutOfSpaceException, ConstructPageException, HashEntryNotFoundException, BufferPoolExceededException, PageNotReadException, FieldNumberOutOfBoundException, HashOperationException, BufMgrException, PagePinnedException, InvalidFrameNumberException, PageUnpinnedException, ReplacerException, InvalidTupleSizeException, InvalidTypeException, PageNotFoundException {
         PageId headerPageId = SystemDefs.JavabaseDB.get_file_entry(fileName);
@@ -54,11 +54,11 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
             this.headerPage = headerPage;
             this.h = h;
             this.L = l;
-
-            LSHashFunctionsMap lshhash = LSHashFunctionsMap.getInstance(this.fileName);
-            LSHLayerMap lshLayerMap = LSHLayerMap.getInstance(this.fileName);
-            // System.out.println(lshhash);
-            // System.out.println(lshLayerMap);
+//            this.fileName = fileName;
+//            LSHashFunctionsMap lshhash = LSHashFunctionsMap.getInstance(this.fileName);
+//            LSHLayerMap lshLayerMap = LSHLayerMap.getInstance(this.fileName);
+//            System.out.println(lshhash);
+//            System.out.println(lshLayerMap);
         } else {
             this.headerPage = new LSHHeaderPage(headerPageId);
         }
@@ -112,18 +112,27 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
                     leafPageFound = leafPage;
                 }
                 else{
-                    leafPageFound = new LSHFLeafPage(this.fileName);
+                    leafPageFound =null;
+//                            new LSHFLeafPage(this.fileName);
                     LSHFInnerPage prevInnerPage = new LSHFInnerPage(new PageId(prevPageId),this.fileName);
                     LSHFInnerPage middleInnerPage = new LSHFInnerPage(layerId,prevHashInConsideration+1,this.fileName);
                     middleInnerPage.insertBucketByKey(leafPage.getFirstVector().getV(), leafPage.getCurPage().pid);
-                    middleInnerPage.insertBucketByKey(key, leafPageFound.getCurPage().pid);
+
+                    if (middleInnerPage.getHashInConsideration(leafPage.getFirstVector().getV()) != middleInnerPage.getHashInConsideration(key)){
+                        leafPageFound = new LSHFLeafPage(this.fileName);
+                        middleInnerPage.insertBucketByKey(key, leafPageFound.getCurPage().pid);
+                        SystemDefs.JavabaseBM.unpinPage(leafPage.getCurPage(), false);
+                    }
+                    else {
+                        leafPageFound =  leafPage;
+                    }
+
                     if (prevInnerPage.deleteBucketByPageId(leafPage.getCurPage().pid)){
                         prevInnerPage.insertBucketByKey(key, middleInnerPage.getCurPage().pid);
                     }
                     else {
                         throw new Exception("insert failed");
                     }
-                    SystemDefs.JavabaseBM.unpinPage(leafPage.getCurPage(), false);
                     SystemDefs.JavabaseBM.unpinPage(prevInnerPage.getCurPage(), true);
                     SystemDefs.JavabaseBM.unpinPage(middleInnerPage.getCurPage(), true);
                 }
@@ -405,4 +414,48 @@ public class LSHFIndexFile implements LSHIndexFileInterface, GlobalConst {
         FileScan fs = new FileScan(tempFileName, types, null, (short)3, (short)3, projlist, null);
         return new Sort(types, (short)3, null, fs, 1, new TupleOrder(TupleOrder.Ascending), 200, Math.max(heapFilePages.size(),1), v, rids.size());
     }
+
+
+
+
+    private void _deleteOnEachLayer(int startPageId, Vector100Dtype key, int layerId, Heapfile heapfile) throws Exception {
+        LSHBasePage currentPage = new LSHBasePage(new PageId(startPageId),this.fileName);
+        int prevPageId = -1;
+
+        List<LSHFLeafPage> leafPages = new ArrayList<>();
+        LSHFLeafPage leafPageFound = null;
+        int prevHashInConsideration = -1;
+        do{
+            if (currentPage.getPageType() == LSHFInnerPage.pageType){
+                LSHFInnerPage innerPage = new LSHFInnerPage(currentPage,this.fileName);
+                int fPid = innerPage.getBucketByKey(key);
+                if (fPid == -1){
+                    return;
+                }
+                prevPageId = innerPage.getCurPage().pid;
+                currentPage = new LSHBasePage(new PageId(fPid),this.fileName);
+//                prevHashInConsideration = innerPage.getHashFunctionInConsideration();
+                SystemDefs.JavabaseBM.unpinPage(new PageId(prevPageId), false);
+            }
+            else {
+                leafPageFound = new LSHFLeafPage(currentPage,this.fileName);
+            }
+        }while(leafPageFound == null);
+
+        int delete = leafPageFound.delete(key, true, heapfile);
+        SystemDefs.JavabaseBM.unpinPage(leafPageFound.getCurPage(), true);
+
+    }
+
+    public void delete(Vector100Dtype key, Heapfile heapfile) throws Exception {
+        LSHLayerMap layerMap = LSHLayerMap.getInstance(this.fileName);
+        Iterator<LSHLayer> iter = layerMap.iterator();
+        while (iter.hasNext()) {
+            LSHLayer layer = iter.next();
+            this._deleteOnEachLayer(layer.getLayerStartPage(), key, layer.getLayerId(), heapfile);
+        }
+    }
+
+
+
 }

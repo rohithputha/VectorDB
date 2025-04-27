@@ -5,12 +5,14 @@ import bufmgr.HashEntryNotFoundException;
 import bufmgr.InvalidFrameNumberException;
 import bufmgr.PageUnpinnedException;
 import bufmgr.ReplacerException;
-import diskmgr.Page;
+import diskmgr.*;
 import global.*;
 import heap.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public class LSHFLeafPage extends LSHBasePage implements Iterable<LSHDto> {
     private PageId pageId;
@@ -112,6 +114,68 @@ public class LSHFLeafPage extends LSHBasePage implements Iterable<LSHDto> {
             this.insertRecord(t.getTupleByteArray());
 //            this.incrNumVectorInPage();
         }
+    }
+
+    public int delete(Vector100Dtype v, boolean basePage, Heapfile hf) throws IOException, InvalidTupleSizeException, InvalidTypeException, FieldNumberOutOfBoundException, InvalidSlotNumberException, ConstructPageException, HashEntryNotFoundException, InvalidFrameNumberException, PageUnpinnedException, ReplacerException, InvalidRunSizeException, InvalidPageNumberException, FileIOException, DiskMgrException, SpaceNotAvailableException, HFDiskMgrException, HFException, HFBufMgrException {
+        int npPresent = 0;
+        if (this.getNextPage().pid != INVALID_PAGE){
+            npPresent = 1;
+        }
+        List<RID> deletedRids = new ArrayList<>();
+        for(int i = 2;i<this.getSlotCnt();i++){
+            RID rid = new RID(this.getCurPage(), i);
+            Tuple t = this.getRecord(rid);
+            t.setHdr((short)3, new AttrType[]{new AttrType(AttrType.attrVector100D),new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)}, null);
+            int s  = t.getIntFld(3);
+            Vector100Dtype vector100Dtype = t.get100DVectFld(1);
+            vector100Dtype.print();
+            if (t.get100DVectFld(1).distanceTo(v) == 0){
+                hf.insertRecord(t.getTupleByteArray());
+//                this.deleteRecord(rid);
+                deletedRids.add(rid);
+//                if (!basePage){
+////                    if (this.getSlotCnt() + npPresent == 2){
+////                        SystemDefs.JavabaseDB.deallocate_page(this.getCurPage());
+////                    }
+//                    SystemDefs.JavabaseBM.unpinPage(this.getCurPage(),true); // should this be in the else?
+//                }
+//                return this.getSlotCnt() + npPresent - 2;
+            }
+        }
+
+        for (RID rid : deletedRids){
+            this.deleteRecord(rid);
+        }
+        this.compact_slot_dir();
+
+        if (!basePage){
+            SystemDefs.JavabaseBM.unpinPage(this.getCurPage(),true);
+        }
+
+
+        PageId nextPageId = this.getNextPage();
+
+        if (nextPageId.pid != INVALID_PAGE){
+            LSHFLeafPage l = new LSHFLeafPage(this.getNextPage(), this.indexName);
+            int d =  l.delete(v, false, hf);
+            if (d == 0 ){
+                nextPageId = l.getNextPage();
+
+                // pin again just to set the next page
+                LSHFLeafPage presCopy = new LSHFLeafPage(this.getCurPage(), this.indexName);
+                presCopy.setNextPage(nextPageId);
+                SystemDefs.JavabaseBM.unpinPage(presCopy.getCurPage(),true);
+
+
+                SystemDefs.JavabaseDB.deallocate_page(l.getCurPage());
+            }
+        }
+
+//        if (!basePage){
+//                SystemDefs.JavabaseBM.unpinPage(this.getCurPage(), false);
+//        }
+
+        return this.getSlotCnt() + npPresent -2;
     }
 
     public LSHDto getFirstVector() throws InvalidTupleSizeException, IOException, InvalidTypeException, InvalidSlotNumberException, FieldNumberOutOfBoundException {
