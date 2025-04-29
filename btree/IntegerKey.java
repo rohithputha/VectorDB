@@ -3,6 +3,7 @@ package btree;
 /**  IntegerKey: It extends the KeyClass.
  *   It defines the integer Key.
  */ 
+@SuppressWarnings("removal")
 public class IntegerKey extends KeyClass {
 
   private Integer key;

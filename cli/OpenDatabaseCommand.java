@@ -2,6 +2,7 @@ package cli;
 
 import global.GlobalConst;
 import global.SystemDefs;
+import diskmgr.PCounter;
 
 import java.io.File;
 
@@ -21,6 +22,9 @@ public class OpenDatabaseCommand implements VectorDbCommand{
 
     @Override
     public void process() {
+
+        long startTime = System.nanoTime();
+
         SystemDefs systemDefs = null;
         if (this.getEnvironment().getDb() != null){
             new BaseCommand(new String[]{CloseDatabaseCommand.COMMAND}).process();
@@ -35,6 +39,13 @@ public class OpenDatabaseCommand implements VectorDbCommand{
         }
         this.getEnvironment().setDb(this.dbName);
         this.getEnvironment().setSystemDefs(systemDefs);
+
+        long endTime = System.nanoTime();
+        long duration = endTime - startTime;
+        System.out.println("Execution Time: " + (duration / 1_000_000) + " milliseconds");
+
+        System.out.println("Read Counter Value: " + PCounter.getReads());
+        System.out.println("Write Counter Value: " + PCounter.getWrites());
     }
 
     private boolean ifDbFileExists(String dbFile) {

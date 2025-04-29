@@ -1,6 +1,7 @@
 package cli;
 
 import global.SystemDefs;
+import diskmgr.PCounter;
 
 public class CloseDatabaseCommand implements VectorDbCommand{
     private String command;
@@ -15,6 +16,9 @@ public class CloseDatabaseCommand implements VectorDbCommand{
 
     @Override
     public void process() {
+
+        long startTime = System.nanoTime();
+
         try{
             if (this.getEnvironment().getDb()!= null){
                 SystemDefs.JavabaseDB.closeDB();
@@ -28,5 +32,12 @@ public class CloseDatabaseCommand implements VectorDbCommand{
             printer("Error closing DB: "+e.getMessage());
             return;
         }
+
+        long endTime = System.nanoTime();
+        long duration = endTime - startTime;
+        System.out.println("Execution Time: " + (duration / 1_000_000) + " milliseconds");
+
+        System.out.println("Read Counter Value: " + PCounter.getReads());
+        System.out.println("Write Counter Value: " + PCounter.getWrites());
     }
 }

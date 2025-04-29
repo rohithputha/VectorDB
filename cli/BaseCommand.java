@@ -21,6 +21,12 @@ public class BaseCommand implements VectorDbCommand {
             case CreateIndex.COMMAND:
                 this.commandObj = new CreateIndex(args);
                 break;
+            case BatchInsertCommand.COMMAND:
+                this.commandObj = new BatchInsertCommand(args);
+                break;
+            // case BatchDeleteCommand.COMMAND:
+            //     this.commandObj = new BatchDeleteCommand(args);
+            //     break;
             default:
                 printer("Unknown command: " + command);
                 throw new IllegalArgumentException("Unknown command: " + command);

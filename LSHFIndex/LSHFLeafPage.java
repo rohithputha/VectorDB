@@ -128,7 +128,7 @@ public class LSHFLeafPage extends LSHBasePage implements Iterable<LSHDto> {
             t.setHdr((short)3, new AttrType[]{new AttrType(AttrType.attrVector100D),new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)}, null);
             int s  = t.getIntFld(3);
             Vector100Dtype vector100Dtype = t.get100DVectFld(1);
-            vector100Dtype.print();
+            // vector100Dtype.print();
             if (t.get100DVectFld(1).distanceTo(v) == 0){
                 hf.insertRecord(t.getTupleByteArray());
 //                this.deleteRecord(rid);

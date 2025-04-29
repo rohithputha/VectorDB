@@ -4,6 +4,7 @@ import global.*;
 /**  IndexData: It extends the DataClass.
  *   It defines the data "pageNo" for index node in B++ tree.
  */
+@SuppressWarnings("removal")
 public class IndexData extends DataClass {
   private PageId pageId;
 

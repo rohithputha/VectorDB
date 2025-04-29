@@ -6,6 +6,7 @@ import java.io.*;
 import bufmgr.*;
 import global.*;
 
+@SuppressWarnings("removal")
 public class DB implements GlobalConst {
 
 

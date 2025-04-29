@@ -15,6 +15,7 @@ import global.Vector100Dtype;
 import heap.HFPage;
 import heap.Heapfile;
 import heap.Tuple;
+import diskmgr.PCounter;
 
 public class BatchCreateCommand implements VectorDbCommand {
    private String commandName; 
@@ -35,6 +36,9 @@ public class BatchCreateCommand implements VectorDbCommand {
    @Override
    public void process() {
         //SystemDefs systemDefs = null;
+
+        long startTime = System.nanoTime();
+
         if(this.getEnvironment().getDb() != null){
             System.out.println("working in " + this.getEnvironment().getDb() );
             try {
@@ -196,6 +200,12 @@ public class BatchCreateCommand implements VectorDbCommand {
             System.out.println("Database not open");
         }
         
+        long endTime = System.nanoTime();
+        long duration = endTime - startTime;
+        System.out.println("Execution Time: " + (duration / 1_000_000) + " milliseconds");
+
+        System.out.println("Read Counter Value: " + PCounter.getReads());
+        System.out.println("Write Counter Value: " + PCounter.getWrites());
    }
 
 

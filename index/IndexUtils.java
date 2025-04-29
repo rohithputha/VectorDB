@@ -9,6 +9,7 @@ import java.io.*;
  * IndexUtils class opens an index scan based on selection conditions.
  * Currently only BTree_scan is supported
  */
+@SuppressWarnings("removal")
 public class IndexUtils {
 
   /**

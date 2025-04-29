@@ -37,6 +37,7 @@ import heap.*;
  * or the whole B+ tree structure or all leaf pages.
  *
  */
+@SuppressWarnings("removal")
 public class BT  implements GlobalConst{
 
   /** It compares two keys.

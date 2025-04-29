@@ -4,6 +4,7 @@ import java.io.*;
 
 /** class PageId
  */
+@SuppressWarnings("removal")
 public class PageId{
   
   /** public int pid
