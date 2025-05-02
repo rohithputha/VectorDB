@@ -71,7 +71,9 @@ public class Scan implements GlobalConst{
 	init(hf);
   }
 
-
+    public RID getUserrid(){
+      return this.userrid;
+    }
   
   /** Retrieve the next record in a sequential scan
    *

@@ -24,9 +24,9 @@ public class BaseCommand implements VectorDbCommand {
             case BatchInsertCommand.COMMAND:
                 this.commandObj = new BatchInsertCommand(args);
                 break;
-            // case BatchDeleteCommand.COMMAND:
-            //     this.commandObj = new BatchDeleteCommand(args);
-            //     break;
+            case BatchDeleteCommand.COMMAND:
+                this.commandObj = new BatchDeleteCommand(args);
+                break;
             case QueryCommand.COMMAND:
                 this.commandObj = new QueryCommand(args);
                 break;
