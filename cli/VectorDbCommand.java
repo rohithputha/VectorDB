@@ -12,6 +12,7 @@ import heap.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Scanner;
 
 public interface VectorDbCommand {
@@ -23,8 +24,32 @@ public interface VectorDbCommand {
     Scanner scanner = new Scanner(System.in);
 
     default void printer(String message) {
-        System.out.print("VectorDB> ");
+        System.out.print("> ");
         System.out.println(message);
+    }
+
+    default void printer(Tuple t, AttrType[] types) throws FieldNumberOutOfBoundException, IOException {
+        // expected that tuple has the hdr set with types
+        System.out.print("> ");
+        for (int i = 0; i < types.length; i++) {
+
+            switch (types[i].attrType) {
+                case AttrType.attrInteger:
+                    System.out.print(Integer.toString(t.getIntFld(i + 1)));
+                    break;
+                case AttrType.attrString:
+                    System.out.print(t.getStrFld(i + 1));
+                    break;
+                case AttrType.attrReal:
+                    System.out.print(Float.toString(t.getFloFld(i + 1)));
+                    break;
+                case AttrType.attrVector100D:
+                    System.out.print(Arrays.toString(t.get100DVectFld(i + 1).getVector()));
+                    break;
+            }
+            System.out.print("  ||  ");
+        }
+        System.out.println();
     }
 
     default void printer() {
@@ -77,7 +102,7 @@ public interface VectorDbCommand {
             AttrType[] schema = new AttrType[numAttributes];
 
             for (int i = 0; i < numAttributes; i++) {
-                switch (t1.getIntFld(i+1)) {
+                switch (t1.getIntFld(i + 1)) {
                     case 1:
                         schema[i] = new AttrType(AttrType.attrInteger);
                         break;

@@ -22,6 +22,7 @@ import java.util.List;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.Arrays;
+import java.util.Random;
 
 public class SortQueryCommand implements VectorDbCommand {
 
@@ -40,6 +41,7 @@ public class SortQueryCommand implements VectorDbCommand {
     private List<Integer> projectList;
     private KeyClass keyClass;
     private AttrType qaAttributeType;
+    private Iterator tupleIterator;
     public SortQueryCommand(String relName1, String relName2, String query) {
         this.query = query;
         this.relName1 = relName1;
@@ -88,13 +90,22 @@ public class SortQueryCommand implements VectorDbCommand {
 
     }
 
+    private AttrType[] projectAttributeTypes = null;
+    private int projQa = -1;
     private AttrType[] getProjectAttributeTypes(AttrType[] originalTypes, List<Integer> projectList) {
+        if (projectAttributeTypes != null) {
+            return projectAttributeTypes;
+        }
         AttrType[] projAttrTypes = new AttrType[projectList.size()];
         for (int i = 0; i < projectList.size(); i++) {
+            if (projectList.get(i) == this.qa) {
+                this.projQa = i+1;
+            }
             projAttrTypes[i] = originalTypes[projectList.get(i)-1];
             /// CHECK: 0 base or 1 based indexing
         }
-        return projAttrTypes;
+        projectAttributeTypes = projAttrTypes;
+        return this.projectAttributeTypes;
     }
 
     private Tuple projectTuple(Tuple original, AttrType[] originalTypes, List<Integer> projectList) throws InvalidTupleSizeException, IOException, InvalidTypeException, FieldNumberOutOfBoundException {
@@ -124,6 +135,7 @@ public class SortQueryCommand implements VectorDbCommand {
 
     private List<Tuple> fileScanHeapFile() throws InvalidRelation, FileScanException, IOException, TupleUtilsException, PageNotReadException, UnknowAttrType, FieldNumberOutOfBoundException, PredEvalException, WrongPermat, InvalidTupleSizeException, JoinsException, InvalidTypeException, BufferPoolExceededException, HashOperationException, BufMgrException, InvalidPageNumberException, PagePinnedException, InvalidFrameNumberException, FileIOException, PageUnpinnedException, DiskMgrException, ReplacerException, SortException, LowMemException, Exception {
         AttrType[] attrTypes = getSchema(this.relName1);
+
         // FldSpec[] projectList = new FldSpec[attrTypes.length];
         // for (int i = 0; i < attrTypes.length; i++) {
         //     projectList[i] = new FldSpec(new RelSpec(RelSpec.outer), i+1);
@@ -136,52 +148,15 @@ public class SortQueryCommand implements VectorDbCommand {
         }
 
         
-
-        // FileScan fs = new FileScan(this.relName1, attrTypes, null, (short) (attrTypes.length), (short) (attrTypes.length), projectList, null);
         FileScan fs = new FileScan(this.relName1, attrTypes, null, (short) (attrTypes.length), (short) (attrTypes.length), outFldstack, null);
         
         Sort sort = new Sort(attrTypes, (short) (attrTypes.length), null, fs, qa, new TupleOrder(TupleOrder.Ascending), 200, 2000, this.targetVect, k);
       
-        
-        int count = 0;
         Tuple result;
 
         List<Tuple> tuples = new ArrayList<>();
-        // while ((result = sort.get_next()) != null && count < this.k) {
         while ((result = sort.get_next()) != null) {
             tuples.add(projectTuple(result, attrTypes, projectList));
-
-            for (int i = 1; i <= attrTypes.length; i++) {
-                AttrType fieldType = attrTypes[i - 1];
-                System.out.print("Field " + i + ": ");
-                
-                switch (fieldType.attrType) {
-                    case AttrType.attrInteger:
-                        int intValue = result.getIntFld(i);
-                        System.out.println(intValue);
-                        break;
-                    case AttrType.attrReal:
-                        float floatValue = result.getFloFld(i);
-                        System.out.println(floatValue);
-                        break;
-                    case AttrType.attrString:
-                        String strValue = result.getStrFld(i);
-                        System.out.println(strValue);
-                        break;
-                    case AttrType.attrVector100D:
-                        Vector100Dtype vectorValue = result.get100DVectFld(i);
-                        short[] vector = vectorValue.getVector();
-                        System.out.println(Arrays.toString(vector));
-                        break;
-                    default:
-                        System.out.println("Unknown type");
-                        break;
-                }
-            }
-            System.out.println("---"); // Separator between tuples
-
-
-            count++;
         }
         fs.close();
         sort.close();
@@ -198,16 +173,31 @@ public class SortQueryCommand implements VectorDbCommand {
     public void process() {
         try{
             parseQueryBody();
-            List<Tuple> t = fileScanHeapFile();
-            this.results = t;
-            this.projectAttrSchema = getProjectAttributeTypes(getSchema(this.relName1), this.projectList);
+            List<Tuple> tuples = fileScanHeapFile();
+
+            // this.results = t;
+            // this.projectAttrSchema = getProjectAttributeTypes(getSchema(this.relName1), this.projectList);
+
+            for (Tuple tuple : tuples) {
+                printer(tuple, this.getProjectAttributeTypes());
+
+            }
         }
         catch(Exception e) {
             printer("Error: error while sorting. " + e.getMessage());
         }
     }
 
-    public List<Tuple> results;
-    public AttrType[] projectAttrSchema;
+
+    public AttrType[] getProjectAttributeTypes() throws BufferPoolExceededException, PageNotReadException, HashOperationException, BufMgrException, InvalidPageNumberException, PagePinnedException, InvalidFrameNumberException, IOException, FileIOException, PageUnpinnedException, DiskMgrException, ReplacerException {
+        AttrType[] projAttrTypes = this.getProjectAttributeTypes(getSchema(this.relName1), this.projectList);
+        return projAttrTypes;
+    }
+    public Iterator getIterator() {
+        return this.tupleIterator;
+    }
+    public int getProjQa(){
+        return this.projQa;
+    }
 
 }

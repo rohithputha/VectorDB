@@ -45,6 +45,15 @@ public class QueryCommand implements VectorDbCommand {
             else if (query.startsWith("Sort(")){
                 queryCommand = new SortQueryCommand(this.relName1, this.relName2, query);
             }
+            else if (query.startsWith("Range")){
+                queryCommand = new RangeScanQueryCommand(this.relName1, this.relName2, query, false);
+            }
+            else if (query.startsWith("NN(")){
+                queryCommand = new NNScanQueryCommand(this.relName1, this.relName2, query, false);
+            }
+            else if (query.startsWith("DJOIN")){
+                queryCommand = new DJoinQueryCommand(this.relName1, this.relName2, query);
+            }
 
             queryCommand.process();
         }
