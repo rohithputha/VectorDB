@@ -43,7 +43,7 @@ public class QueryCommand implements VectorDbCommand {
                 queryCommand = new FilterQueryCommand(this.relName1, this.relName2, query);
             }
             else if (query.startsWith("Sort(")){
-                // set the query command to the sort class
+                queryCommand = new SortQueryCommand(this.relName1, this.relName2, query);
             }
 
             queryCommand.process();

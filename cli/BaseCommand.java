@@ -27,6 +27,9 @@ public class BaseCommand implements VectorDbCommand {
             // case BatchDeleteCommand.COMMAND:
             //     this.commandObj = new BatchDeleteCommand(args);
             //     break;
+            case QueryCommand.COMMAND:
+                this.commandObj = new QueryCommand(args);
+                break;
             default:
                 printer("Unknown command: " + command);
                 throw new IllegalArgumentException("Unknown command: " + command);
