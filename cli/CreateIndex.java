@@ -1,5 +1,10 @@
 package cli;
 
+import btree.BTreeFile;
+import btree.DeleteFashion;
+import btree.IntegerKey;
+import btree.RealKey;
+import btree.StringKey;
 import diskmgr.Page;
 import global.AttrType;
 import global.GlobalConst;
@@ -145,6 +150,53 @@ public class CreateIndex implements VectorDbCommand {
                     System.out.println("LSH index " + indexName + " created successfully.");
                 }else{
                     System.out.println("Not Vector");
+                    String indexName = RELNAME + "_" + COLUMN_ID;
+
+                    if(schemaAttrTypes[COLUMN_ID].attrType == AttrType.attrInteger){
+                        BTreeFile btf = new BTreeFile(indexName, AttrType.attrInteger, 4, DeleteFashion.NAIVE_DELETE);
+                        Scan scan = dataHeapFile.openScan();
+                        RID rid = new RID();
+
+                        Tuple tuple;
+                        while ((tuple = scan.getNext(rid)) != null){
+                            tuple.setHdr((short) input_fields_length, schemaAttrTypes, strSizes);
+                            Integer intValue = tuple.getIntFld(COLUMN_ID+1);
+                            IntegerKey key = new IntegerKey(intValue);
+                            btf.insert(key, rid);
+                        }
+                        scan.closescan();
+                        btf.close();
+                    } else if (schemaAttrTypes[COLUMN_ID].attrType == AttrType.attrReal){
+                        BTreeFile btf = new BTreeFile(indexName, AttrType.attrReal, 8, DeleteFashion.NAIVE_DELETE);
+                        Scan scan = dataHeapFile.openScan();
+                        RID rid = new RID();
+
+                        Tuple tuple;
+                        while ((tuple = scan.getNext(rid)) != null){
+                            tuple.setHdr((short) input_fields_length, schemaAttrTypes, strSizes);
+                            Float realValue = tuple.getFloFld(COLUMN_ID+1);
+                            RealKey key = new RealKey(realValue);
+                            btf.insert(key, rid);
+                        }
+                        scan.closescan();
+                        btf.close();
+                    } else if (schemaAttrTypes[COLUMN_ID].attrType == AttrType.attrString){
+                        BTreeFile btf = new BTreeFile(indexName, AttrType.attrString, 100, DeleteFashion.NAIVE_DELETE);
+                        Scan scan = dataHeapFile.openScan();
+                        RID rid = new RID();
+
+                        Tuple tuple;
+                        while ((tuple = scan.getNext(rid)) != null){
+                            tuple.setHdr((short) input_fields_length, schemaAttrTypes, strSizes);
+                            String stringValue = tuple.getStrFld(COLUMN_ID+1);
+                            StringKey key = new StringKey(stringValue);
+                            btf.insert(key, rid);
+                        }
+                        scan.closescan();
+                        btf.close();
+                    }
+                    System.out.println("Btree index with name - " + indexName + " created successfully.");
+                    
                 } 
 
                 SystemDefs.JavabaseBM.flushAllPages();
