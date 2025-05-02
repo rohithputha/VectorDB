@@ -153,11 +153,21 @@ public class SortQueryCommand implements VectorDbCommand {
         Sort sort = new Sort(attrTypes, (short) (attrTypes.length), null, fs, qa, new TupleOrder(TupleOrder.Ascending), 200, 2000, this.targetVect, k);
       
         Tuple result;
-
+        int count = 0;
         List<Tuple> tuples = new ArrayList<>();
-        while ((result = sort.get_next()) != null) {
-            tuples.add(projectTuple(result, attrTypes, projectList));
+
+        if (k == 0) {
+            while ((result = sort.get_next()) != null) {
+                tuples.add(projectTuple(result, attrTypes, projectList));
+                count ++;
+            }
+        } else {
+            while ((result = sort.get_next()) != null && count < this.k) {
+                tuples.add(projectTuple(result, attrTypes, projectList));
+                count ++;
+            }
         }
+        
         fs.close();
         sort.close();
         return tuples;

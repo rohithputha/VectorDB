@@ -121,7 +121,8 @@ public class CreateIndex implements VectorDbCommand {
                     }
                 }
 
-                if (schemaAttrTypes[COLUMN_ID].attrType == AttrType.attrVector100D) {
+                // if (schemaAttrTypes[COLUMN_ID].attrType == AttrType.attrVector100D) {
+                if (schemaAttrTypes[COLUMN_ID - 1].attrType == AttrType.attrVector100D) {
                     // Create LSH index for vector
                     String indexName = RELNAME + "_" + COLUMN_ID + "_" + L + "_" + h;
                     LSHFIndex.LSHFIndexFile indexFile = new LSHFIndex.LSHFIndexFile(indexName, h, L);
@@ -135,7 +136,8 @@ public class CreateIndex implements VectorDbCommand {
                     while ((tuple = scan.getNext(rid)) != null) {
                         if (tuple != null) {
                             tuple.setHdr((short) input_fields_length, schemaAttrTypes, strSizes);
-                            Vector100Dtype vector = tuple.get100DVectFld(COLUMN_ID + 1);
+                            // Vector100Dtype vector = tuple.get100DVectFld(COLUMN_ID + 1);
+                            Vector100Dtype vector = tuple.get100DVectFld(COLUMN_ID);
                             // System.out.println(vector.get(0)+" "+rid.pageNo.pid+" "+rid.slotNo);
                             indexFile.insert(vector, rid);
                         }
@@ -152,7 +154,8 @@ public class CreateIndex implements VectorDbCommand {
                     System.out.println("Not Vector");
                     String indexName = RELNAME + "_" + COLUMN_ID;
 
-                    if(schemaAttrTypes[COLUMN_ID].attrType == AttrType.attrInteger){
+                    // if(schemaAttrTypes[COLUMN_ID].attrType == AttrType.attrInteger){
+                    if(schemaAttrTypes[COLUMN_ID - 1].attrType == AttrType.attrInteger){
                         BTreeFile btf = new BTreeFile(indexName, AttrType.attrInteger, 4, DeleteFashion.NAIVE_DELETE);
                         Scan scan = dataHeapFile.openScan();
                         RID rid = new RID();
@@ -160,13 +163,16 @@ public class CreateIndex implements VectorDbCommand {
                         Tuple tuple;
                         while ((tuple = scan.getNext(rid)) != null){
                             tuple.setHdr((short) input_fields_length, schemaAttrTypes, strSizes);
-                            Integer intValue = tuple.getIntFld(COLUMN_ID+1);
+                            // Integer intValue = tuple.getIntFld(COLUMN_ID+1);
+                            Integer intValue = tuple.getIntFld(COLUMN_ID);
                             IntegerKey key = new IntegerKey(intValue);
                             btf.insert(key, rid);
                         }
                         scan.closescan();
                         btf.close();
-                    } else if (schemaAttrTypes[COLUMN_ID].attrType == AttrType.attrReal){
+                    } 
+                    // else if (schemaAttrTypes[COLUMN_ID].attrType == AttrType.attrReal){
+                    else if (schemaAttrTypes[COLUMN_ID - 1].attrType == AttrType.attrReal){
                         BTreeFile btf = new BTreeFile(indexName, AttrType.attrReal, 8, DeleteFashion.NAIVE_DELETE);
                         Scan scan = dataHeapFile.openScan();
                         RID rid = new RID();
@@ -174,13 +180,16 @@ public class CreateIndex implements VectorDbCommand {
                         Tuple tuple;
                         while ((tuple = scan.getNext(rid)) != null){
                             tuple.setHdr((short) input_fields_length, schemaAttrTypes, strSizes);
-                            Float realValue = tuple.getFloFld(COLUMN_ID+1);
+                            // Float realValue = tuple.getFloFld(COLUMN_ID+1);
+                            Float realValue = tuple.getFloFld(COLUMN_ID);
                             RealKey key = new RealKey(realValue);
                             btf.insert(key, rid);
                         }
                         scan.closescan();
                         btf.close();
-                    } else if (schemaAttrTypes[COLUMN_ID].attrType == AttrType.attrString){
+                    } 
+                    // else if (schemaAttrTypes[COLUMN_ID].attrType == AttrType.attrString){
+                    else if (schemaAttrTypes[COLUMN_ID - 1].attrType == AttrType.attrString){
                         BTreeFile btf = new BTreeFile(indexName, AttrType.attrString, 100, DeleteFashion.NAIVE_DELETE);
                         Scan scan = dataHeapFile.openScan();
                         RID rid = new RID();
@@ -188,7 +197,8 @@ public class CreateIndex implements VectorDbCommand {
                         Tuple tuple;
                         while ((tuple = scan.getNext(rid)) != null){
                             tuple.setHdr((short) input_fields_length, schemaAttrTypes, strSizes);
-                            String stringValue = tuple.getStrFld(COLUMN_ID+1);
+                            // String stringValue = tuple.getStrFld(COLUMN_ID+1);
+                            String stringValue = tuple.getStrFld(COLUMN_ID);
                             StringKey key = new StringKey(stringValue);
                             btf.insert(key, rid);
                         }

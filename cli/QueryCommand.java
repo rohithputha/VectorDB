@@ -8,6 +8,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
 
+import diskmgr.PCounter;
+
 public class QueryCommand implements VectorDbCommand {
 
     private final String command;
@@ -36,6 +38,9 @@ public class QueryCommand implements VectorDbCommand {
 
     @Override
     public void process() {
+
+        long startTime = System.nanoTime();
+
         try{
             printer("processing Query");
             String query = this.readFile(this.qsName);
@@ -61,6 +66,13 @@ public class QueryCommand implements VectorDbCommand {
             e.printStackTrace();
             printer("Error reading query file: " + e.getMessage());
         }
+
+        long endTime = System.nanoTime();
+        long duration = endTime - startTime;
+        System.out.println("Execution Time: " + (duration / 1_000_000) + " milliseconds");
+
+        System.out.println("Read Counter Value: " + PCounter.getReads());
+        System.out.println("Write Counter Value: " + PCounter.getWrites());
 
     }
 

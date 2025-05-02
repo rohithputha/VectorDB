@@ -58,7 +58,7 @@ public class FilterQueryCommand implements VectorDbCommand {
                 this.keyClass = new StringKey(t);
                 break;
             case AttrType.attrReal:
-                this.keyClass = new IntegerKey(Integer.parseInt(t));
+                this.keyClass = new RealKey(Float.parseFloat(t));
                 break;
             default:
                 throw new ParseException("Unknown attribute type", 0);
@@ -194,6 +194,9 @@ public class FilterQueryCommand implements VectorDbCommand {
             List<Tuple> t = this.getHeapFileRecords(this.projectList, useIndexToFilter());
             this.results = t;
             this.projectAttrSchema = getProjectAttributeTypes(getSchema(this.relName1), this.projectList);
+            for (Tuple tuple : t) {
+                printer(tuple, this.projectAttrSchema);
+            }
         }
         catch(Exception e) {
             printer("Error: error while filtering. " + e.getMessage());
