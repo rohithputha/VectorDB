@@ -90,9 +90,23 @@ public class SortQueryCommand implements VectorDbCommand {
         //     default:
         //         throw new ParseException("Unknown attribute type", 0);
         // }
+        // projectList = new ArrayList<>();
+        // for (int i = 3; i < args.length; i++) {
+        //     projectList.add(Integer.parseInt(args[i].trim()));
+        // }
+
         projectList = new ArrayList<>();
-        for (int i = 3; i < args.length; i++) {
-            projectList.add(Integer.parseInt(args[i].trim()));
+        System.out.println(args[3]);
+        if(args[3].trim().equals("*")){
+            AttrType[] at1 = getSchema(this.relName1);
+            for(int i=0;i<at1.length;i++){
+                projectList.add(i+1);
+            }
+        }
+        else{
+            for (int i = 3; i < args.length; i++) {
+                projectList.add(Integer.parseInt(args[i].trim()));
+            } 
         }
 
     }

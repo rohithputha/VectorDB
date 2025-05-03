@@ -70,9 +70,22 @@ public class FilterQueryCommand implements VectorDbCommand {
                 bTreeFile = null;
             }
         }
+        // projectList = new ArrayList<>();
+        // for (int i = 4; i < args.length; i++) {
+        //     projectList.add(Integer.parseInt(args[i].trim()));
+        // }
+
         projectList = new ArrayList<>();
-        for (int i = 4; i < args.length; i++) {
-            projectList.add(Integer.parseInt(args[i].trim()));
+        if(args[4].trim().equals("*")){
+            AttrType[] at1 = getSchema(this.relName1);
+            for(int i=0;i<at1.length;i++){
+                projectList.add(i+1);
+            }
+        }
+        else{
+            for (int i = 4; i < args.length; i++) {
+                projectList.add(Integer.parseInt(args[i].trim()));
+            } 
         }
 
     }

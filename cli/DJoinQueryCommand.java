@@ -104,10 +104,24 @@ public class DJoinQueryCommand implements VectorDbCommand {
         System.out.println(this.dist2);
         this.i2 = args2[3].trim();
         System.out.println(this.i2);
+        
+        // this.innerProjList = new ArrayList<>();
+        // for (int i = 4; i < args2.length; i++) {
+        //     innerProjList.add(Integer.parseInt(args2[i].trim()));
+        // }
+
         this.innerProjList = new ArrayList<>();
-        for (int i = 4; i < args2.length; i++) {
-            innerProjList.add(Integer.parseInt(args2[i].trim()));
+        if (args2[4].trim().equals("*")){
+            AttrType[] at2 = getSchema(this.relName2);
+            for (int i = 0; i < at2.length; i++) {
+                this.innerProjList.add(i+1);
+            }
+        }else{
+            for (int i = 4; i < args2.length; i++) {
+                innerProjList.add(Integer.parseInt(args2[i].trim()));
+            }
         }
+
         //rest of argumenbts of arg2 are for  printing out and joining
 
 
