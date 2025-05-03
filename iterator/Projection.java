@@ -50,6 +50,9 @@ public class Projection {
                         case AttrType.attrString:
                             Jtuple.setStrFld(i + 1, t1.getStrFld(perm_mat[i].offset));
                             break;
+                        case AttrType.attrVector100D:
+                            Jtuple.set100DVectFld(i + 1, t1.get100DVectFld(perm_mat[i].offset));
+                            break;
                         default:
 
                             throw new UnknowAttrType("Don't know how to handle attrSymbol, attrNull");
@@ -67,6 +70,9 @@ public class Projection {
                             break;
                         case AttrType.attrString:
                             Jtuple.setStrFld(i + 1, t2.getStrFld(perm_mat[i].offset));
+                            break;
+                        case AttrType.attrVector100D:
+                            Jtuple.set100DVectFld(i + 1, t2.get100DVectFld(perm_mat[i].offset));
                             break;
                         default:
 

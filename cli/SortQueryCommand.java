@@ -30,11 +30,12 @@ public class SortQueryCommand implements VectorDbCommand {
     private final String QUERY = "Sort";
     private String relName1;
     private String relName2;
+    private int allocatedBuff;
 
 
 
     private int qa;
-    private String t;
+    // private String t;
     private int k;
     private String i;
     private BTreeFile bTreeFile;
@@ -42,32 +43,38 @@ public class SortQueryCommand implements VectorDbCommand {
     private KeyClass keyClass;
     private AttrType qaAttributeType;
     private Iterator tupleIterator;
-    public SortQueryCommand(String relName1, String relName2, String query) {
+    public SortQueryCommand(String relName1, String relName2, String query, int allocatedBuff) {
         this.query = query;
         this.relName1 = relName1;
         this.relName2 = relName2;
+        this.allocatedBuff = allocatedBuff;
     }
-    private Vector100Dtype targetVect;
+    private String targetFile;
+    private Vector100Dtype t;
+    // private Vector100Dtype targetVect;
 
-    private void parseQueryBody() throws ParseException, BufferPoolExceededException, PageNotReadException, HashOperationException, BufMgrException, InvalidPageNumberException, PagePinnedException, InvalidFrameNumberException, IOException, FileIOException, PageUnpinnedException, DiskMgrException, ReplacerException {
+    private void parseQueryBody() throws Exception {
 
         String queryBody = this.query.split("[()]")[1];
         String[] args = queryBody.split(",");
         this.qa = Integer.parseInt(args[0].trim());
 
-        System.out.println(this.qa);
+        // System.out.println(this.qa);
         this.qaAttributeType = getSchema(this.relName1)[this.qa-1];
+        this.targetFile = args[1].trim();
+        this.t = getTaretVector(this.targetFile);
+
         System.out.println(qaAttributeType);
 
-        this.t = args[1].trim();
-        BufferedReader bufr = new BufferedReader(new FileReader(this.t + ".txt"));
-        String vec = bufr.readLine();
-        bufr.close();
-        String[] veclist = vec.trim().split("\\s+");
-        this.targetVect = new Vector100Dtype();
-        for (int i = 0; i < 100; i++) {
-            targetVect.set(i, Short.parseShort(veclist[i]));
-        }
+        // this.t = args[1].trim();
+        // BufferedReader bufr = new BufferedReader(new FileReader(this.t + ".txt"));
+        // String vec = bufr.readLine();
+        // bufr.close();
+        // String[] veclist = vec.trim().split("\\s+");
+        // this.targetVect = new Vector100Dtype();
+        // for (int i = 0; i < 100; i++) {
+        //     targetVect.set(i, Short.parseShort(veclist[i]));
+        // }
 
         this.k = Integer.parseInt(args[2].trim());
         // switch (qaAttributeType.attrType) {
@@ -88,6 +95,30 @@ public class SortQueryCommand implements VectorDbCommand {
             projectList.add(Integer.parseInt(args[i].trim()));
         }
 
+    }
+
+    private Vector100Dtype getTaretVector(String filePath) throws Exception {
+        short[] result = new short[100];
+        int count = 0;
+
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while (count < 100 && (line = br.readLine()) != null) {
+                String[] tokens = line.trim().split("\\s+");
+                for (String tok : tokens) {
+                    if (count >= 100) break;
+                    result[count++] = Short.parseShort(tok);
+                }
+            }
+        }
+
+        if (count != 100) {
+            throw new IOException(
+                    "Expected 100 numbers but found " + count + " in file: " + filePath
+            );
+        }
+
+        return new Vector100Dtype(result);
     }
 
     private AttrType[] projectAttributeTypes = null;
@@ -149,8 +180,7 @@ public class SortQueryCommand implements VectorDbCommand {
 
         
         FileScan fs = new FileScan(this.relName1, attrTypes, null, (short) (attrTypes.length), (short) (attrTypes.length), outFldstack, null);
-        
-        Sort sort = new Sort(attrTypes, (short) (attrTypes.length), null, fs, qa, new TupleOrder(TupleOrder.Ascending), 200, 2000, this.targetVect, k);
+        Sort sort = new Sort(attrTypes, (short) (attrTypes.length), null, fs, qa, new TupleOrder(TupleOrder.Ascending), 200, (int)(this.allocatedBuff * 0.9), this.t, k);
       
         Tuple result;
         int count = 0;
@@ -195,6 +225,7 @@ public class SortQueryCommand implements VectorDbCommand {
         }
         catch(Exception e) {
             printer("Error: error while sorting. " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

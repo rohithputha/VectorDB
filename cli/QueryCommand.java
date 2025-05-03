@@ -43,24 +43,33 @@ public class QueryCommand implements VectorDbCommand {
 
         try{
             printer("processing Query");
+
+            OpenDatabaseCommand openDatabaseCommand = new OpenDatabaseCommand(new String[]{OpenDatabaseCommand.COMMAND,this.getEnvironment().getDb()});
+            openDatabaseCommand.process(this.numBuffs);
+
             String query = this.readFile(this.qsName);
             if (query.startsWith("Filter(")){
                 queryCommand = new FilterQueryCommand(this.relName1, this.relName2, query);
             }
             else if (query.startsWith("Sort(")){
-                queryCommand = new SortQueryCommand(this.relName1, this.relName2, query);
+                queryCommand = new SortQueryCommand(this.relName1, this.relName2, query, this.numBuffs);
             }
             else if (query.startsWith("Range")){
                 queryCommand = new RangeScanQueryCommand(this.relName1, this.relName2, query, false);
             }
             else if (query.startsWith("NN(")){
-                queryCommand = new NNScanQueryCommand(this.relName1, this.relName2, query, false);
+                queryCommand = new NNScanQueryCommand(this.relName1, this.relName2, query, false, this.numBuffs);
             }
             else if (query.startsWith("DJOIN")){
-                queryCommand = new DJoinQueryCommand(this.relName1, this.relName2, query);
+                queryCommand = new DJoinQueryCommand(this.relName1, this.relName2, query, this.numBuffs);
             }
 
             queryCommand.process();
+
+            printer("Query executed successfully");
+            printer("reopening the database with original buffers");
+            new BaseCommand(new String[]{OpenDatabaseCommand.COMMAND, this.getEnvironment().getDb()}).process();
+
         }
         catch (IOException e){
             e.printStackTrace();

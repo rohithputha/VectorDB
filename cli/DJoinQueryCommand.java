@@ -32,14 +32,16 @@ public class DJoinQueryCommand implements VectorDbCommand {
     private String i2;
     private List<Integer> innerProjList;
     private AttrType[] newAttrs;
-    public DJoinQueryCommand(String relName1, String relName2, String query) {
+    private int allocatedBuff;
+    public DJoinQueryCommand(String relName1, String relName2, String query, int allocatedBuff) {
         this.query = query;
         this.relName1 = relName1;
         this.relName2 = relName2;
+        this.allocatedBuff = allocatedBuff;
     }
 
     private String getLshIndexName(String relName, int columnId) throws Exception {
-        String fileName = "handL_" + relName;
+        String fileName = "handL" + relName;
         PageId firstPid = SystemDefs.JavabaseDB.get_file_entry(fileName);
         if (firstPid == null) {
             throw new Exception("No LSH metadata found for relation: " + relName);
@@ -157,6 +159,7 @@ public class DJoinQueryCommand implements VectorDbCommand {
             }
             tuples.add(t);
         }
+        inlJoin.close();
         return tuples;
     }
 
@@ -270,7 +273,7 @@ public class DJoinQueryCommand implements VectorDbCommand {
 
             } else if (this.query1.startsWith("NN(")) {
 //                vecCommand = new NNScanQueryCommand;
-                vecCommand = new NNScanQueryCommand(this.relName1, this.relName2, this.query1, true);
+                vecCommand = new NNScanQueryCommand(this.relName1, this.relName2, this.query1, true, this.allocatedBuff);
                 NNScanQueryCommand nVecCommand = (NNScanQueryCommand) vecCommand;
                 nVecCommand.process();
                 outerIterator = (nVecCommand).getIterator();

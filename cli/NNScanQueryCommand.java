@@ -24,11 +24,13 @@ public class NNScanQueryCommand implements VectorDbCommand{
     private String relName2;
     private String queryBody;
     private boolean iter;
-    public NNScanQueryCommand(String relName1, String relName2, String query, boolean iter) {
+    private int allocatedBuff;
+    public NNScanQueryCommand(String relName1, String relName2, String query, boolean iter, int allocatedBuff) {
         this.query = query;
         this.relName1 = relName1;
         this.relName2 = relName2;
         this.iter = iter;
+        this.allocatedBuff = allocatedBuff;
     }
 
     private int qa;
@@ -43,7 +45,7 @@ public class NNScanQueryCommand implements VectorDbCommand{
     private String lshIndexName;
     private Iterator tupleIterator;
     private String getLshIndexName(String relName, int columnId) throws Exception {
-        String fileName = "handL_" + relName;
+        String fileName = "handL" + relName;
         PageId firstPid = SystemDefs.JavabaseDB.get_file_entry(fileName);
         if (firstPid == null) {
             throw new Exception("No LSH metadata found for relation: " + relName);
@@ -128,6 +130,7 @@ public class NNScanQueryCommand implements VectorDbCommand{
         this.k = Integer.parseInt(args[2].trim());
         this.i = args[3].trim();
         this.t = getTaretVector(this.targetFile);
+        
         if (this.i.equalsIgnoreCase("H")) {
             try {
                 this.lshIndexName = getLshIndexName(this.relName1, this.qa);
@@ -239,7 +242,7 @@ public class NNScanQueryCommand implements VectorDbCommand{
         //FileScan fs = new FileScan("test.heap", types, null, (short)1, (short)1, projlist, null);
         FileScan scan = new FileScan(this.relName1, schemaAttrTypes, null, (short) schemaAttrTypes.length, (short) schemaAttrTypes.length, outFldstack, null);
 
-        Sort sort = new Sort(schemaAttrTypes, (short) input_fields_length, null, scan, this.qa, new TupleOrder(TupleOrder.Ascending), 200, 2000, this.t, this.k);
+        Sort sort = new Sort(schemaAttrTypes, (short) input_fields_length, null, scan, this.qa, new TupleOrder(TupleOrder.Ascending), 200, (int)(this.allocatedBuff * 0.9), this.t, this.k);
         int count = 0;
         Tuple result;
 

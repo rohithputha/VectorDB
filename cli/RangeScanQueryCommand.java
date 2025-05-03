@@ -45,7 +45,7 @@ public class RangeScanQueryCommand implements VectorDbCommand{
     private LSHFIndexFile lshfIndexFile;
     private String lshIndexName;
     private String getLshIndexName(String relName, int columnId) throws Exception {
-        String fileName = "handL_" + relName;
+        String fileName = "handL" + relName;
         PageId firstPid = SystemDefs.JavabaseDB.get_file_entry(fileName);
         if (firstPid == null) {
             throw new Exception("No LSH metadata found for relation: " + relName);
@@ -214,6 +214,7 @@ public class RangeScanQueryCommand implements VectorDbCommand{
             outFldstack[i] = new FldSpec(new RelSpec(RelSpec.outer), i + 1);
         }
 
+        System.out.println(lshIndexName);
 
         RSIndexScan rsIndexScan =  new RSIndexScan(
                 new IndexType(IndexType.LSHFIndex),
@@ -333,6 +334,7 @@ public class RangeScanQueryCommand implements VectorDbCommand{
         }
         catch (Exception e){
             printer("Error: NN scan on column "+this.qa +" with error "+e.getMessage());
+            e.printStackTrace();
         }
 
     }

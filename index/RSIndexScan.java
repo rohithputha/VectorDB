@@ -1,7 +1,7 @@
 package index;
 
 import LSHFIndex.LSHFIndexFile;
-import bufmgr.PageNotReadException;
+import bufmgr.*;
 import global.*;
 import heap.Heapfile;
 import heap.InvalidTupleSizeException;
@@ -149,7 +149,8 @@ public class RSIndexScan extends Iterator {
     }
 
     @Override
-    public void close() throws IOException, JoinsException, SortException, IndexException {
+    public void close() throws IOException, JoinsException, SortException, IndexException, HashEntryNotFoundException, PageNotFoundException, HashOperationException, BufMgrException, PagePinnedException, InvalidFrameNumberException, PageUnpinnedException, ReplacerException {
         sortedK.close();
+        this.indexFile.close();
     }
 }

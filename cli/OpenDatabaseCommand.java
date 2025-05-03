@@ -48,6 +48,27 @@ public class OpenDatabaseCommand implements VectorDbCommand{
         System.out.println("Write Counter Value: " + PCounter.getWrites());
     }
 
+    public void process(int numBuffs){
+
+        long startTime = System.nanoTime();
+
+        SystemDefs systemDefs = null;
+        if (this.getEnvironment().getDb() != null){
+            new BaseCommand(new String[]{CloseDatabaseCommand.COMMAND}).process();
+        }
+        printer("Opening database with new buffers");
+        systemDefs = new SystemDefs(this.dbName, 0, numBuffs, "Clock");
+        this.getEnvironment().setDb(this.dbName);
+        this.getEnvironment().setSystemDefs(systemDefs);
+
+        long endTime = System.nanoTime();
+        long duration = endTime - startTime;
+        System.out.println("Execution Time: " + (duration / 1_000_000) + " milliseconds");
+
+        System.out.println("Read Counter Value: " + PCounter.getReads());
+        System.out.println("Write Counter Value: " + PCounter.getWrites());
+    }
+
     private boolean ifDbFileExists(String dbFile) {
         File f = new File(dbFile);
         return f.exists();

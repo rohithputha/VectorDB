@@ -118,7 +118,7 @@ public interface VectorDbCommand {
 
                 }
             }
-
+            SystemDefs.JavabaseBM.unpinPage(pid, false);
             return schema;
         } catch (InvalidSlotNumberException e) {
             throw new RuntimeException(e);
@@ -127,6 +127,8 @@ public interface VectorDbCommand {
         } catch (InvalidTupleSizeException e) {
             throw new RuntimeException(e);
         } catch (InvalidTypeException e) {
+            throw new RuntimeException(e);
+        } catch (HashEntryNotFoundException e) {
             throw new RuntimeException(e);
         }
 
