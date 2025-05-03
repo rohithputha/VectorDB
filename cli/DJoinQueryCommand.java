@@ -96,14 +96,14 @@ public class DJoinQueryCommand implements VectorDbCommand {
         String[] args2 = queryBody[3].split(",");
 
         this.query1 = queryBody[1].trim() + "(" + String.join(",", args1) + ")";
-        System.out.println(Arrays.toString(args1));
+        // System.out.println(Arrays.toString(args1));
 
         this.qa2 = Integer.parseInt(args2[1].trim());
-        System.out.println(this.qa2);
+        // System.out.println(this.qa2);
         this.dist2 = Integer.parseInt(args2[2].trim());
-        System.out.println(this.dist2);
+        // System.out.println(this.dist2);
         this.i2 = args2[3].trim();
-        System.out.println(this.i2);
+        // System.out.println(this.i2);
         
         // this.innerProjList = new ArrayList<>();
         // for (int i = 4; i < args2.length; i++) {
@@ -312,8 +312,8 @@ public class DJoinQueryCommand implements VectorDbCommand {
                 tuples = noIndex(outerIterator, outerAttrTypes, projQa);
             }
             outerIterator.close();
-            System.out.println(Arrays.toString(newAttrs));
-            System.out.println("------------------------");
+            // System.out.println(Arrays.toString(newAttrs));
+            // System.out.println("------------------------");
             for (Tuple t : tuples) {
                 printer(t, newAttrs);
             }

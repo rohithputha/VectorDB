@@ -2,7 +2,6 @@ package cli;
 
 import LSHFIndex.LSHFIndexFile;
 import btree.*;
-import diskmgr.PCounter;
 import diskmgr.Page;
 import global.*;
 import heap.*;
@@ -18,8 +17,8 @@ import static global.GlobalConst.INVALID_PAGE;
 
 public class BatchDeleteCommand implements VectorDbCommand{
 
-    public static class DataFileMetaData{
-        private static DataFileMetaData instance;
+    private static class DataFileMetaData{
+//        private DataFileMetaData instance;
         private int n;
         private AttrType[] attrs;
         private List<Integer> vectorFields;
@@ -42,9 +41,6 @@ public class BatchDeleteCommand implements VectorDbCommand{
             this.vectorFields = vectorFields;
         }
         public static DataFileMetaData getInstance(BufferedReader reader) throws Exception{
-            if (instance != null){
-                return instance;
-            }
             try{
                 int n = Integer.parseInt(reader.readLine().trim());
                 AttrType[] attrs = new AttrType[n];
@@ -64,18 +60,19 @@ public class BatchDeleteCommand implements VectorDbCommand{
                             break;
                         case 4:
                             attrs[i] = new AttrType(AttrType.attrVector100D);
-                            vectorFields.add(i);
+                            vectorFields.add(i+1);
                             break;
                         default:
                             throw new Exception("Unknown attribute type: " + typeInt);
                     }
                 }
-                instance = new DataFileMetaData(n, attrs, vectorFields);
+                return new DataFileMetaData(n, attrs, vectorFields);
             } catch (Exception e) {
+                e.printStackTrace();
                 throw new Exception("error parsing datafile.");
+
             }
 
-            return instance;
         }
     }
 
@@ -109,7 +106,7 @@ public class BatchDeleteCommand implements VectorDbCommand{
 
     private void initLshfIndexFileMap() throws Exception {
         this.lshfIndexFileMap = new HashMap<Integer, LSHFIndexFile>();
-        PageId hLPid = SystemDefs.JavabaseDB.get_file_entry("handL_" + this.relName);
+        PageId hLPid = SystemDefs.JavabaseDB.get_file_entry("handL" + this.relName);
         if (hLPid == null || hLPid.pid == INVALID_PAGE){
             return;
         }
@@ -160,7 +157,7 @@ public class BatchDeleteCommand implements VectorDbCommand{
             int fldtype = f.getIntFld(i + 1);
             if (fldtype>0 && fldtype<4) {
                 //schemaAttrTypes[i] = new AttrType(AttrType.attrInteger);
-                String btree_index_name = this.relName + "_" + i;
+                String btree_index_name = this.relName + "_" + (i+1);
                 //System.out.println(btree_index_name);
                 try{
                     BTreeFile btf = new BTreeFile(btree_index_name);
@@ -216,7 +213,7 @@ public class BatchDeleteCommand implements VectorDbCommand{
             System.out.println(t.key);
 
             LeafData ld = (LeafData) t.data;
-            
+
             RID rid = new RID(ld.getData().pageNo, ld.getData().slotNo);
             relHeapFile.deleteRecord(rid);
             rids.add(rid);
@@ -259,7 +256,7 @@ public class BatchDeleteCommand implements VectorDbCommand{
     }
     private void deleteHeapFile(FileScan fs, Heapfile hf,AttrType[] attrTypes, int attrNum, Object delKey) throws Exception {
         List<RID> rids = new ArrayList<>();
-        
+
 
         while(true){
             RID nrid = fs.get_rid();
@@ -272,16 +269,16 @@ public class BatchDeleteCommand implements VectorDbCommand{
                 // System.out.println(delKey);
                 // System.out.println("checked ---- passed");
                 // System.out.println(t.getFloFld(3));
-                
+
                 // System.out.println();
                 //System.out.println("Going here ---------->");
-                
+
                 //System.out.println(nrid.pageNo.pid+" "+nrid.slotNo );
                 if(nrid != null){
                     rids.add(nrid);
                 }
-                
-               
+
+
             }
         }
         // Heapfile baseFile = new Heapfile(this.relName);
@@ -304,26 +301,24 @@ public class BatchDeleteCommand implements VectorDbCommand{
         //         if(rid!=null){
         //             rids.add(scan.getUserrid());
         //         }
-                
+
         //     }
-            
+
         // }
         // scan.closescan();
 
-        
+
 
         for (RID ridx: rids){
             //System.out.println(ridx.slotNo);
             hf.deleteRecord(ridx);
-            
+
         }
         return;
     }
 
     @Override
     public void process() {
-
-        long startTime = System.nanoTime();
         try{
             initMetadataObject();
             initLshfIndexFileMap();
@@ -343,14 +338,15 @@ public class BatchDeleteCommand implements VectorDbCommand{
                     int attrNum = Integer.parseInt(ds[0]);
                     //System.out.println(this.dataFileMetaData.getAttr(attrNum-1).attrType);
                     if (this.dataFileMetaData.getAttr(attrNum-1).attrType == 5){
+                        System.out.println("%%%%%%%%%%%%%%%%Going here%%%%%%%%%%%%%%%%%%%%%%%");
                         short[] s = new short[100];
                         for (int i = 0;i<100;i++){
                             s[i] = Short.parseShort(ds[i+1]);
                         }
                         Vector100Dtype deleteKey = new Vector100Dtype(s);
-                        if(this.lshfIndexFileMap.containsKey(attrNum-1)){
+                        if(this.lshfIndexFileMap.containsKey(attrNum)){
                             Random random = new Random();
-                            String tempHfName = this.relName+"_"+random.nextInt(100)+"_"+attrNum;
+                            String tempHfName = this.relName+""+random.nextInt(100)+""+attrNum;
                             Heapfile tempHf  = new Heapfile(tempHfName);
                             LSHFIndexFile lshfIndexFile = this.lshfIndexFileMap.get(attrNum);
                             lshfIndexFile.delete(deleteKey, tempHf);
@@ -366,14 +362,14 @@ public class BatchDeleteCommand implements VectorDbCommand{
                             //while(true){
 
 //                                FldSpec[] projlist = {new FldSpec(new RelSpec(RelSpec.outer), 1),new FldSpec(new RelSpec(RelSpec.outer), 2), new FldSpec(new RelSpec(RelSpec.outer), 3)};
-                                AttrType[] types = this.dataFileMetaData.getAttrs();
-                                FldSpec[] projlist = new FldSpec[types.length];
-                                for (int i = 0;i<types.length;i++){
-                                    projlist[i] = new FldSpec(new RelSpec(RelSpec.outer), i+1);
-                                }
-                                FileScan fs = new FileScan(this.relName, types, null, (short)types.length, (short)types.length, projlist, null);
-                                deleteHeapFile(fs,relHeapfile,types,attrNum, deleteKey);
-                                SystemDefs.JavabaseBM.flushAllPages();
+                            AttrType[] types = this.dataFileMetaData.getAttrs();
+                            FldSpec[] projlist = new FldSpec[types.length];
+                            for (int i = 0;i<types.length;i++){
+                                projlist[i] = new FldSpec(new RelSpec(RelSpec.outer), i+1);
+                            }
+                            FileScan fs = new FileScan(this.relName, types, null, (short)types.length, (short)types.length, projlist, null);
+                            deleteHeapFile(fs,relHeapfile,types,attrNum, deleteKey);
+                            SystemDefs.JavabaseBM.flushAllPages();
                             //}
                         }
                     }
@@ -383,17 +379,17 @@ public class BatchDeleteCommand implements VectorDbCommand{
                         //System.out.println("------------->");
                         //System.out.println(this.dataFileMetaData.getAttr(attrNum-1).attrType);
                         if (this.dataFileMetaData.getAttr(attrNum-1).attrType == 1){
-                           delKey = new IntegerKey(Integer.parseInt(ds[1]));
-                           deleteKey =Integer.parseInt(ds[1]);
+                            delKey = new IntegerKey(Integer.parseInt(ds[1]));
+                            deleteKey =Integer.parseInt(ds[1]);
                         }
                         else if (this.dataFileMetaData.getAttr(attrNum-1).attrType == 0){
-                           delKey = new StringKey(ds[1]);
-                           deleteKey =(ds[1]);
+                            delKey = new StringKey(ds[1]);
+                            deleteKey =(ds[1]);
                         }
                         else if (this.dataFileMetaData.getAttr(attrNum-1).attrType == 2){
                             delKey = new RealKey(Float.parseFloat(ds[1]));
                             deleteKey =(ds[1]);
-                         }
+                        }
 
                         if(this.btreeFileMap.containsKey(attrNum-1)){
                             System.out.println("yohoyoho-------");
@@ -402,7 +398,7 @@ public class BatchDeleteCommand implements VectorDbCommand{
                             BTFileScan bTreeFileScan = btreeFile.new_scan(delKey, delKey);
                             List<RID> rids  = this.deleteRidsBtree(relHeapfile, bTreeFileScan);
                             for (RID rid: rids){
-                                System.out.println("*********************************");
+                                System.out.println("***********");
                                 System.out.println(delKey+" "+rid);
                                 btreeFile.Delete(delKey,rid);
                             }
@@ -412,18 +408,18 @@ public class BatchDeleteCommand implements VectorDbCommand{
                         }
                         else{
                             //while(true){
-                                AttrType[] types = this.dataFileMetaData.getAttrs();
-                                FldSpec[] projlist = new FldSpec[types.length];
-                                for (int i = 0;i<types.length;i++){
-                                    projlist[i] = new FldSpec(new RelSpec(RelSpec.outer), i+1);
-                                }
-                                FileScan fs = new FileScan(this.relName, types, null, (short)types.length, (short)types.length, projlist, null);
-                                deleteHeapFile(fs,relHeapfile,types,attrNum, deleteKey);
-                                fs.close();
-                                SystemDefs.JavabaseBM.flushAllPages();
+                            AttrType[] types = this.dataFileMetaData.getAttrs();
+                            FldSpec[] projlist = new FldSpec[types.length];
+                            for (int i = 0;i<types.length;i++){
+                                projlist[i] = new FldSpec(new RelSpec(RelSpec.outer), i+1);
+                            }
+                            FileScan fs = new FileScan(this.relName, types, null, (short)types.length, (short)types.length, projlist, null);
+                            deleteHeapFile(fs,relHeapfile,types,attrNum, deleteKey);
+                            fs.close();
+                            SystemDefs.JavabaseBM.flushAllPages();
                             //}
                         }
-                        
+
 
 
                     }
@@ -443,11 +439,5 @@ public class BatchDeleteCommand implements VectorDbCommand{
             printer("Error :"+e.getMessage());
             return;
         }
-
-        long endTime = System.nanoTime();
-        long duration = endTime - startTime;
-        System.out.println("Execution Time: " + (duration / 1_000_000) + " milliseconds");
-        System.out.println("Read Counter Value: " + PCounter.getReads());
-        System.out.println("Write Counter Value: " + PCounter.getWrites());
     }
 }

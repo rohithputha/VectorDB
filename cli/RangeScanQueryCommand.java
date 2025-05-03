@@ -227,7 +227,7 @@ public class RangeScanQueryCommand implements VectorDbCommand{
             outFldstack[i] = new FldSpec(new RelSpec(RelSpec.outer), i + 1);
         }
 
-        System.out.println(lshIndexName);
+        // System.out.println(lshIndexName);
 
         RSIndexScan rsIndexScan =  new RSIndexScan(
                 new IndexType(IndexType.LSHFIndex),
@@ -275,13 +275,13 @@ public class RangeScanQueryCommand implements VectorDbCommand{
         }
 
         //FileScan fs = new FileScan("test.heap", types, null, (short)1, (short)1, projlist, null);
-        for (AttrType i : schemaAttrTypes) {
-            System.out.println(i);
-        }
+        // for (AttrType i : schemaAttrTypes) {
+        //     System.out.println(i);
+        // }
 
-        for (FldSpec i : outFldstack) {
-            System.out.println(i);
-        }
+        // for (FldSpec i : outFldstack) {
+        //     System.out.println(i);
+        // }
         FileScan scan = new FileScan(this.relName1, schemaAttrTypes, null, (short) input_fields_length, (short) input_fields_length, outFldstack, null);
 
 //                    Sort sort = new Sort(schemaAttrTypes, (short)input_fields_length, null, scan, QA, new TupleOrder(TupleOrder.Ascending), 200, 2000, targetVect, k);

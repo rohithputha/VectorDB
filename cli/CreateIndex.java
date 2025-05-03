@@ -84,32 +84,48 @@ public class CreateIndex implements VectorDbCommand {
                 SystemDefs.JavabaseBM.unpinPage(pid, false);
 
                 PageId pidhL = SystemDefs.JavabaseDB.get_file_entry("handL" + RELNAME);
-                Tuple x = new Tuple();
+                if (this.h != -1 && this.L != -1){
+                    Tuple x = new Tuple();
 
-                // x.setHdr((short) 2, new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)},
-                //         null);
-                x.setHdr((short) 3, new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)},
-                        null);
-                x.setIntFld(1, h);
-                x.setIntFld(2, L);
-                x.setIntFld(3, COLUMN_ID);
+                    x.setHdr((short) 3, new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)},
+                            null);
+                    x.setIntFld(1, h);
+                    x.setIntFld(2, L);
+                    x.setIntFld(3, this.COLUMN_ID);
 
-                if(pidhL == null){
-                    Page page_x = new Page();
-                    PageId newPageId = SystemDefs.JavabaseBM.newPage(page_x, 1);
-                    HFPage hfPage_x = new HFPage();
-                    hfPage_x.init(newPageId, page_x);
+                    if(pidhL == null){
+                        Page page_x = new Page();
+                        PageId newPageId = SystemDefs.JavabaseBM.newPage(page_x, 1);
+                        HFPage hfPage_x = new HFPage();
+                        hfPage_x.init(newPageId, page_x);
 
-                    hfPage_x.insertRecord(x.getTupleByteArray());
-                    SystemDefs.JavabaseDB.add_file_entry("handL"+RELNAME, hfPage_x.getCurPage());
-                    SystemDefs.JavabaseBM.unpinPage(hfPage_x.getCurPage(), true);
-                }
-                else{
-                    HFPage hfPage_x = new HFPage();
-                    SystemDefs.JavabaseBM.pinPage(pidhL, hfPage_x, false);
-                    // hfPage_x.deleteRecord(new RID(new PageId(pidhL.pid), 0));
-                    hfPage_x.insertRecord(x.getTupleByteArray());
-                    SystemDefs.JavabaseBM.unpinPage(hfPage_x.getCurPage(), true);
+                        hfPage_x.insertRecord(x.getTupleByteArray());
+                        SystemDefs.JavabaseDB.add_file_entry("handL"+RELNAME, hfPage_x.getCurPage());
+                        SystemDefs.JavabaseBM.unpinPage(hfPage_x.getCurPage(), true);
+                    }
+                    else{
+                        HFPage hfPage_x = new HFPage();
+                        SystemDefs.JavabaseBM.pinPage(pidhL, hfPage_x, false);
+                        Tuple s;
+                        int i = 0;
+                        for (i = 0;i<hfPage_x.getSlotCnt();i++){
+                            s = hfPage_x.getRecord(new RID(hfPage_x.getCurPage(), i));
+                            s.setHdr((short) 3, new AttrType[]{new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger), new AttrType(AttrType.attrInteger)},
+                                    null);
+                            if(s.getIntFld(3) == this.COLUMN_ID){
+                                break;
+                            }
+                            s = null;
+                        }
+                        try{
+                            hfPage_x.deleteRecord(new RID(new PageId(pidhL.pid), i));
+                        }
+                        catch(Exception e){
+
+                        }
+                        hfPage_x.insertRecord(x.getTupleByteArray());
+                        SystemDefs.JavabaseBM.unpinPage(hfPage_x.getCurPage(), true);
+                    }
                 }
 
                 // Initialize string sizes array (needed for tuple creation)
@@ -121,8 +137,7 @@ public class CreateIndex implements VectorDbCommand {
                     }
                 }
 
-                // if (schemaAttrTypes[COLUMN_ID].attrType == AttrType.attrVector100D) {
-                if (schemaAttrTypes[COLUMN_ID - 1].attrType == AttrType.attrVector100D) {
+                if (schemaAttrTypes[COLUMN_ID-1].attrType == AttrType.attrVector100D) {
                     // Create LSH index for vector
                     String indexName = RELNAME + "_" + COLUMN_ID + "_" + L + "_" + h;
                     LSHFIndex.LSHFIndexFile indexFile = new LSHFIndex.LSHFIndexFile(indexName, h, L);
@@ -136,7 +151,6 @@ public class CreateIndex implements VectorDbCommand {
                     while ((tuple = scan.getNext(rid)) != null) {
                         if (tuple != null) {
                             tuple.setHdr((short) input_fields_length, schemaAttrTypes, strSizes);
-                            // Vector100Dtype vector = tuple.get100DVectFld(COLUMN_ID + 1);
                             Vector100Dtype vector = tuple.get100DVectFld(COLUMN_ID);
                             // System.out.println(vector.get(0)+" "+rid.pageNo.pid+" "+rid.slotNo);
                             indexFile.insert(vector, rid);
@@ -150,8 +164,9 @@ public class CreateIndex implements VectorDbCommand {
                     //storeIndexMetadata(relName, columnId, "LSH", L, h, indexName);
                     
                     System.out.println("LSH index " + indexName + " created successfully.");
+
                 }else{
-                    System.out.println("Not Vector");
+                    // System.out.println("Not Vector");
                     String indexName = RELNAME + "_" + COLUMN_ID;
 
                     // if(schemaAttrTypes[COLUMN_ID].attrType == AttrType.attrInteger){
@@ -228,6 +243,6 @@ public class CreateIndex implements VectorDbCommand {
 
         System.out.println("Read Counter Value: " + PCounter.getReads());
         System.out.println("Write Counter Value: " + PCounter.getWrites());
-        
+
    }
 }
